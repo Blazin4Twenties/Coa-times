@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Crystal of Atlan - Live Event Countdown Timers (GMT-4 Eastern Time US & Canada)</title>
+  <title>Crystal of Atlan - Live Event Countdown Timers (Timezone-Aware)</title>
   <style>
     body { background: #232a34; color: #fff; font-family: Arial, sans-serif; margin: 0; min-height: 100vh; }
     h1 { text-align: center; margin-top: 36px; margin-bottom: 32px; font-size: 2.2em; font-weight: 700; }
@@ -42,12 +42,14 @@
     .status-green { background: #1e4021; color: #aaffaa; }
     .status-yellow { background: #3a390c; color: #ffe066; }
     .status-blue { background: #1e3040; color: #4db3ff; }
+    .timezone-select-container { text-align: center; margin: 34px 0 30px 0; }
+    .timezone-select { font-size: 1.1em; border-radius: 6px; padding: 6px 14px; background: #232a34; color: #ffe066; border: 1px solid #ffe066; }
+    label[for="timezone-select"] { color: #ffe066; font-size: 1.09em; margin-right: 7px; font-weight: bold; }
     @media (max-width: 1100px) { .events-grid { flex-direction: column; align-items: center; } .event-card { min-width: 250px; max-width: 90vw; } }
   </style>
 </head>
 <body>
-  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT-4/Eastern)</h1>
-
+  <h1>Crystal of Atlan - Live Event Countdown Timers (<span id="current-tz-label">All Times GMT-4/Eastern</span>)</h1>
   <table class="status-table">
     <tr>
       <th>Card Color</th>
@@ -71,8 +73,36 @@
     </tr>
   </table>
   <div class="events-grid" id="events"></div>
+  <div class="timezone-select-container">
+    <label for="timezone-select">Select Timezone:</label>
+    <select id="timezone-select" class="timezone-select">
+      <option value="America/New_York" selected>GMT-4 Eastern (US/Canada)</option>
+      <option value="America/Chicago">GMT-5 Central (US/Canada)</option>
+      <option value="America/Denver">GMT-6 Mountain (US/Canada)</option>
+      <option value="America/Los_Angeles">GMT-7 Pacific (US/Canada)</option>
+      <option value="UTC">UTC (Coordinated Universal Time)</option>
+      <option value="Europe/London">GMT+1 London (UK)</option>
+      <option value="Europe/Paris">GMT+2 Paris (France)</option>
+      <option value="Asia/Tokyo">GMT+9 Tokyo (Japan)</option>
+      <option value="Australia/Sydney">GMT+10 Sydney (Australia)</option>
+      <option value="Asia/Kolkata">GMT+5:30 India (IST)</option>
+    </select>
+  </div>
   <script>
-    const tz = 'America/New_York'; // GMT-4 during daylight time
+    // Default timezone is Eastern US/Canada
+    let tz = 'America/New_York';
+    const tzLabels = {
+      "America/New_York": "All Times GMT-4/Eastern",
+      "America/Chicago": "All Times GMT-5/Central",
+      "America/Denver": "All Times GMT-6/Mountain",
+      "America/Los_Angeles": "All Times GMT-7/Pacific",
+      "UTC": "All Times UTC",
+      "Europe/London": "All Times GMT+1/London",
+      "Europe/Paris": "All Times GMT+2/Paris",
+      "Asia/Tokyo": "All Times GMT+9/Tokyo",
+      "Australia/Sydney": "All Times GMT+10/Sydney",
+      "Asia/Kolkata": "All Times GMT+5:30/India"
+    };
 
     function pad(n){return n.toString().padStart(2,'0');}
     function getDurationText(h, m) {
@@ -80,6 +110,9 @@
       if (h > 0) result.push(h + "h");
       if (m > 0) result.push(m + "m");
       return result.length ? result.join(" ") : "Instant";
+    }
+    function getTzLabel() {
+      return tzLabels[tz] || `All Times (${tz})`;
     }
 
     const events = [
@@ -89,8 +122,7 @@
       { id: 'void_realms', summary: 'Void Realms', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'energy_replenishment', summary: 'Energy Replenishment Daily Reset', desc: '06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'tempered_trials_reset', summary: 'Tempered Trials Daily Reset', desc: '06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
-      { id: 'hexchess_weekly_rewards', summary: 'Hexchess Weekly Rewards Reset', desc: 'Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1] },
-      { id: 'hexchess_rewards_refresh', summary: 'Hexchess (Rewards Refresh)', desc: 'Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1] },
+      { id: 'hexchess_weekly_rewards', summary: 'Hexchess Weekly Rewards Reset', desc: 'Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1] }
       { id: 'arena_reset', summary: 'Arena Reset (Every other Monday)', desc: 'Every other Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1],
         customNext: function(now) {
           function getISOWeek(date) {
@@ -171,6 +203,8 @@
     }
 
     function updateTimers() {
+      document.getElementById('current-tz-label').textContent = getTzLabel();
+
       const now = new Date();
       events.forEach(event => {
         let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
@@ -217,7 +251,7 @@
         let durEl = document.getElementById('duration-' + event.id);
         if (durEl) durEl.textContent = `Duration: ${getDurationText(duration.h, duration.m)}`;
         let schEl = document.getElementById('schedule-' + event.id);
-        if (schEl) schEl.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-4`;
+        if (schEl) schEl.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} (${getTzLabel().replace("All Times ","").replace("GMT","UTC")})`;
 
         let timerEl = document.getElementById('timer-' + event.id);
         let cardEl = document.getElementById('card-' + event.id);
@@ -257,6 +291,12 @@
     renderEvents();
     updateTimers();
     setInterval(updateTimers, 1000);
+
+    // Handle timezone change
+    document.getElementById('timezone-select').addEventListener('change', function(e) {
+      tz = e.target.value;
+      updateTimers();
+    });
   </script>
 </body>
 </html>
