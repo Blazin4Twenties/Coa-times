@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Crystal of Atlan - Live Event Countdown Timers (All Times GMT)</title>
+  <title>Crystal of Atlan - Live Event Countdown Timers (GMT-4 Eastern Time)</title>
   <style>
     body { background: #232a34; color: #fff; font-family: Arial, sans-serif; margin: 0; min-height: 100vh; }
     h1 { text-align: center; margin-top: 36px; margin-bottom: 32px; font-size: 2.2em; font-weight: 700; }
@@ -20,349 +20,283 @@
   </style>
 </head>
 <body>
-  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT)</h1>
+  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT-4/Eastern)</h1>
   <div class="events-grid" id="events"></div>
   <script>
+    // Use America/New_York, which is GMT-4 during daylight savings
+    const tz = "America/New_York";
+
     function pad(n){return n.toString().padStart(2,'0');}
-    function getDurationText(d, h, m) {
+    function getDurationText(h, m) {
       let result = [];
-      if (d > 0) result.push(d + "d");
       if (h > 0) result.push(h + "h");
       if (m > 0) result.push(m + "m");
       return result.length ? result.join(" ") : "Instant";
     }
-    // Helper to get next event occurrence (for recurring events)
-    function getNextOccurrence(startDay, startTime, now, recurDays=1) {
-      let [startH, startM] = startTime.split(':').map(Number);
-      let next = new Date(now);
-      next.setUTCHours(startH, startM, 0, 0);
-      let addDays = ((startDay - now.getUTCDay() + 7) % 7);
-      if (addDays === 0 && (now.getUTCHours() > startH || (now.getUTCHours() === startH && now.getUTCMinutes() >= startM))) {
-        addDays = recurDays; // Next week/recurrence
-      }
-      next.setUTCDate(now.getUTCDate() + addDays);
-      return next;
+    function fmtTime(dt) {
+      return dt.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz});
+    }
+    function fmtDateTime(dt) {
+      return dt.toLocaleString('en-US', {year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hour12: false, timeZone: tz});
     }
 
-    // Data from your screenshot, with explicit start/end/duration, recurring where appropriate
+    // All recurring events, times as per your screenshot, in America/New_York (GMT-4)
     const events = [
-      // 1. Ranked Match Season (fixed duration, not recurring)
       {
         id: 'ranked_match_season',
         summary: 'Ranked Match Season',
         desc: '',
-        start: '2025-06-07T09:00:00Z',
-        end:   '2025-09-08T23:59:00Z',
-        duration: { d: 92, h: 14, m: 59 }, // 92d 14h 59m
+        start: '2025-06-07T00:00:00-04:00',
+        end:   '2025-07-01T00:00:00-04:00',
         recurring: false
       },
-      // 2. Energy Replenishment Daily Reset
       {
-        id: 'energy_replenishment',
-        summary: 'Energy Replenishment Daily Reset',
-        desc: 'Resets daily at 06:00 GMT',
-        startTime: '06:00',
-        endTime: '06:01',
-        duration: { d:0, h:0, m:1 },
+        id: 'arena_reset',
+        summary: 'Arena Reset (Every other Monday)',
+        desc: 'Every other Monday at 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
+        recurDaysArr: [1],
+        duration: { h:0, m:1 },
+        customNext: function(now) {
+          function getISOWeek(date) {
+            const tmp = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const dayNum = tmp.getDay() || 7;
+            tmp.setDate(tmp.getDate() + 4 - dayNum);
+            const yearStart = new Date(tmp.getFullYear(),0,1);
+            return Math.ceil((((tmp - yearStart)/86400000) + 1)/7);
+          }
+          let localNow = new Date(now.toLocaleString('en-US', {timeZone: tz}));
+          let day = localNow.getDay();
+          let daysUntilMonday = (1 - day + 7) % 7;
+          let nextMonday = new Date(localNow);
+          nextMonday.setDate(localNow.getDate() + daysUntilMonday);
+          nextMonday.setHours(6,0,0,0);
+          if (day === 1 && localNow.getHours() < 6) {
+            nextMonday = new Date(localNow);
+            nextMonday.setHours(6,0,0,0);
+          } else if (day === 1 && localNow.getHours() >= 6) {
+            nextMonday.setDate(nextMonday.getDate() + 7);
+            nextMonday.setHours(6,0,0,0);
+          }
+          while (getISOWeek(nextMonday) % 2 !== 0) {
+            nextMonday.setDate(nextMonday.getDate() + 7);
+          }
+          let nextEnd = new Date(nextMonday.getTime() + 60000);
+          let nextMondayUTC = new Date(nextMonday.toLocaleString('en-US', { timeZone: 'UTC' }));
+          let nextEndUTC = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
+          let isActive = (now >= nextMondayUTC && now < nextEndUTC);
+          return {utcStart: nextMondayUTC, utcEnd: nextEndUTC, isActive, localStart: nextMonday, localEnd: nextEnd};
+        }
       },
-      // 3. Hexchess Weekly Rewards Reset (Monday only)
-      {
-        id: 'hexchess_weekly_rewards',
-        summary: 'Hexchess Weekly Rewards Reset',
-        desc: 'Resets Mondays at 06:00 GMT',
-        startTime: '06:00',
-        endTime: '06:01',
-        duration: { d:0, h:0, m:1 },
-        recurring: true,
-        recurDays: 7,
-        recurDaysArr: [1]
-      },
-      // 4. Abyssal Frontier (Golden Fleece) - Monday 20:00-20:15
-      {
-        id: 'abyssal_frontier',
-        summary: 'Abyssal Frontier (Golden Fleece)',
-        desc: 'Monday 20:00-20:15 GMT',
-        startTime: '20:00',
-        endTime: '20:15',
-        duration: { d:0, h:0, m:15 },
-        recurring: true,
-        recurDays: 7,
-        recurDaysArr: [1]
-      },
-      // 5. Deeprock Vein Rewards Reset - Wednesday 12:00-12:01
-      {
-        id: 'deeprock_vein_reset',
-        summary: 'Deeprock Vein Rewards Reset',
-        desc: 'Wednesday 12:00 GMT',
-        startTime: '12:00',
-        endTime: '12:01',
-        duration: { d:0, h:0, m:1 },
-        recurring: true,
-        recurDays: 7,
-        recurDaysArr: [3]
-      },
-      // 6. Gold Rush Adventure (Golden Fleece) - Saturday 20:00-20:15
-      {
-        id: 'gold_rush_adventure',
-        summary: 'Gold Rush Adventure (Golden Fleece)',
-        desc: 'Saturday 20:00-20:15 GMT',
-        startTime: '20:00',
-        endTime: '20:15',
-        duration: { d:0, h:0, m:15 },
-        recurring: true,
-        recurDays: 7,
-        recurDaysArr: [6]
-      },
-      // 7. Swiftshade Racetrack (Golden Fleece) - Tuesday 20:00-20:15
-      {
-        id: 'swiftshade_racetrack',
-        summary: 'Swiftshade Racetrack (Golden Fleece)',
-        desc: 'Tuesday 20:00-20:15 GMT',
-        startTime: '20:00',
-        endTime: '20:15',
-        duration: { d:0, h:0, m:15 },
-        recurring: true,
-        recurDays: 7,
-        recurDaysArr: [2]
-      },
-      // 8. Arena (Crystal Arena) - 19:00-22:00 Daily
-      {
-        id: 'arena_late',
-        summary: 'Arena (Crystal Arena) Late',
-        desc: 'Daily 19:00-22:00 GMT',
-        startTime: '19:00',
-        endTime: '22:00',
-        duration: { d:0, h:3, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 9. Ancient Battlefield 1 - Daily 12:30-14:00
-      {
-        id: 'ancient_battlefield_1',
-        summary: 'Ancient Battlefield 1',
-        desc: 'Daily 12:30-14:00 GMT',
-        startTime: '12:30',
-        endTime: '14:00',
-        duration: { d:0, h:1, m:30 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 10. Deeprock Vein - Mine Wars - Daily 12:00-14:00
-      {
-        id: 'mine_wars_1',
-        summary: 'Deeprock Vein – Mine Wars',
-        desc: 'Daily 12:00-14:00 GMT',
-        startTime: '12:00',
-        endTime: '14:00',
-        duration: { d:0, h:2, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 11. Deeprock Vein – Mine Wars – Daily 21:00-23:00
-      {
-        id: 'mine_wars_2',
-        summary: 'Deeprock Vein – Mine Wars (Late)',
-        desc: 'Daily 21:00-23:00 GMT',
-        startTime: '21:00',
-        endTime: '23:00',
-        duration: { d:0, h:2, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 12. Ancient Battlefield 2 – Daily 20:00-22:00
-      {
-        id: 'ancient_battlefield_2',
-        summary: 'Ancient Battlefield 2',
-        desc: 'Daily 20:00-22:00 GMT',
-        startTime: '20:00',
-        endTime: '22:00',
-        duration: { d:0, h:2, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 13. Arena (Crystal Arena) Early – Daily 12:00-14:00
-      {
-        id: 'arena_early',
-        summary: 'Arena (Crystal Arena) Early',
-        desc: 'Daily 12:00-14:00 GMT',
-        startTime: '12:00',
-        endTime: '14:00',
-        duration: { d:0, h:2, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 14. Arena (Crystal Arena) – Daily 19:00-22:00 (already above, skip duplicate)
-      // 15-17. Duel Bonds – Daily 00:00-00:00 (1d duration, daily)
-      {
-        id: 'duel_bonds',
-        summary: 'Duel Bonds',
-        desc: 'Daily 00:00-00:00 GMT',
-        startTime: '00:00',
-        endTime: '00:00',
-        duration: { d:1, h:0, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 18. Void Realms – Daily 00:00-00:00 (1d)
-      {
-        id: 'void_realms',
-        summary: 'Void Realms',
-        desc: 'Daily 00:00-00:00 GMT',
-        startTime: '00:00',
-        endTime: '00:00',
-        duration: { d:1, h:0, m:0 },
-        recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      // 19. Critical Conquest – Daily 00:00-00:00 (1d)
       {
         id: 'critical_conquest',
         summary: 'Critical Conquest',
-        desc: 'Daily 00:00-00:00 GMT',
-        startTime: '00:00',
-        endTime: '00:00',
-        duration: { d:1, h:0, m:0 },
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
         recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:24, m:0 }
       },
-      // 20. Arena Reset (Every other Monday) – 06:00-06:01
-      {
-        id: 'arena_reset',
-        summary: 'Arena Reset',
-        desc: 'Every other Monday at 06:00 GMT',
-        startTime: '06:00',
-        endTime: '06:01',
-        duration: { d:0, h:0, m:1 },
-        recurring: true,
-        recurDays: 14, // every 2 weeks
-        recurDaysArr: [1],
-        customNext: function(now) {
-          function getISOWeek(date) {
-            const tmp = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-            const dayNum = tmp.getUTCDay() || 7;
-            tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
-            return Math.ceil((((tmp - yearStart)/86400000) + 1)/7);
-          }
-          let d = new Date(now);
-          d.setUTCSeconds(0,0);
-          let day = d.getUTCDay();
-          let daysUntilMonday = (1 - day + 7) % 7;
-          let nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysUntilMonday, 6, 0, 0, 0));
-          if (day === 1 && (d.getUTCHours() < 6)) {
-            nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 0, 0, 0));
-          }
-          else if (day === 1 && (d.getUTCHours() >= 6)) {
-            nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 7, 6, 0, 0, 0));
-          }
-          while (getISOWeek(nextMonday) % 2 !== 0) {
-            nextMonday.setUTCDate(nextMonday.getUTCDate() + 7);
-          }
-          let nextEnd = new Date(nextMonday.getTime() + 60000);
-          return {utcStart: nextMonday, utcEnd: nextEnd, isActive: (now >= nextMonday && now < nextEnd), localStart: nextMonday, localEnd: nextEnd};
-        }
-      },
-      // 21. Hexchess (Rewards Refresh) – Monday 06:00-06:01
       {
         id: 'hexchess_rewards_refresh',
         summary: 'Hexchess (Rewards Refresh)',
-        desc: 'Monday 06:00-06:01 GMT',
-        startTime: '06:00',
-        endTime: '06:01',
-        duration: { d:0, h:0, m:1 },
+        desc: 'Monday 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDays: 7,
-        recurDaysArr: [1]
+        recurDaysArr: [1],
+        duration: { h:0, m:1 }
       },
-      // 22. Tempered Trials Daily Reset – Daily 06:00-06:01
+      {
+        id: 'energy_replenishment',
+        summary: 'Energy Replenishment Daily Reset',
+        desc: 'Daily 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:0, m:1 }
+      },
       {
         id: 'tempered_trials_reset',
         summary: 'Tempered Trials Daily Reset',
-        desc: 'Resets daily at 06:00 GMT',
-        startTime: '06:00',
-        endTime: '06:01',
-        duration: { d:0, h:0, m:1 },
+        desc: 'Daily 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDays: 1,
-        recurDaysArr: [0,1,2,3,4,5,6]
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:0, m:1 }
       },
-      // 23. Joint Siege – Sunday 20:30-21:00
       {
-        id: 'joint_siege',
-        summary: 'Joint Siege',
-        desc: 'Sunday 20:30-21:00 GMT',
-        startTime: '20:30',
-        endTime: '21:00',
-        duration: { d:0, h:0, m:30 },
+        id: 'hexchess_weekly_rewards',
+        summary: 'Hexchess Weekly Rewards Reset',
+        desc: 'Monday 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDays: 7,
-        recurDaysArr: [0]
+        recurDaysArr: [1],
+        duration: { h:0, m:1 }
+      },
+      {
+        id: 'arena_crystal_morning',
+        summary: 'Arena (Crystal Arena) Morning',
+        desc: '07:00–10:00',
+        startTime: '07:00', endTime: '10:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:3, m:0 }
+      },
+      {
+        id: 'arena_crystal_noon',
+        summary: 'Arena (Crystal Arena) Noon',
+        desc: '12:00–14:00',
+        startTime: '12:00', endTime: '14:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:2, m:0 }
+      },
+      {
+        id: 'mine_wars_1',
+        summary: 'Deeprock Vein – Mine Wars',
+        desc: '12:00–14:00',
+        startTime: '12:00', endTime: '14:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:2, m:0 }
+      },
+      {
+        id: 'ancient_battlefield_1',
+        summary: 'Ancient Battlefield',
+        desc: '12:30–14:00',
+        startTime: '12:30', endTime: '14:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:1, m:30 }
+      },
+      {
+        id: 'arena_crystal_evening',
+        summary: 'Arena (Crystal Arena) Evening',
+        desc: '19:00–22:00',
+        startTime: '19:00', endTime: '22:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:3, m:0 }
+      },
+      {
+        id: 'ancient_battlefield_2',
+        summary: 'Ancient Battlefield',
+        desc: '20:00–22:00',
+        startTime: '20:00', endTime: '22:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:2, m:0 }
+      },
+      {
+        id: 'abyssal_frontier',
+        summary: 'Abyssal Frontier (Golden Fleece)',
+        desc: 'Monday 20:00–20:15',
+        startTime: '20:00', endTime: '20:15',
+        recurring: true,
+        recurDaysArr: [1],
+        duration: { h:0, m:15 }
+      },
+      {
+        id: 'mine_wars_2',
+        summary: 'Deeprock Vein – Mine Wars',
+        desc: '21:00–23:00',
+        startTime: '21:00', endTime: '23:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:2, m:0 }
+      },
+      {
+        id: 'swiftshade_racetrack',
+        summary: 'Swiftshade Racetrack (Golden Fleece)',
+        desc: 'Tuesday 20:00–20:15',
+        startTime: '20:00', endTime: '20:15',
+        recurring: true,
+        recurDaysArr: [2],
+        duration: { h:0, m:15 }
+      },
+      {
+        id: 'gold_rush_adventure',
+        summary: 'Gold Rush Adventure (Golden Fleece)',
+        desc: 'Saturday 20:00–20:15',
+        startTime: '20:00', endTime: '20:15',
+        recurring: true,
+        recurDaysArr: [6],
+        duration: { h:0, m:15 }
+      },
+      {
+        id: 'duel_bonds',
+        summary: 'Duel Bonds',
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:24, m:0 }
+      },
+      {
+        id: 'void_realms',
+        summary: 'Void Realms',
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6],
+        duration: { h:24, m:0 }
       }
     ];
 
-    // Get next start/end for an event, supporting one-time and recurring events
     function getNextEventTimes(event, now) {
       // One-time event
       if (!event.recurring) {
         let start = new Date(event.start);
         let end = new Date(event.end);
         let isActive = now >= start && now < end;
-        let inFuture = now < start;
-        return {utcStart: start, utcEnd: end, isActive, localStart: start, localEnd: end, inFuture};
+        let saStart = new Date(start.toLocaleString('en-US', {timeZone: tz}));
+        let saEnd = new Date(end.toLocaleString('en-US', {timeZone: tz}));
+        return {utcStart: start, utcEnd: end, isActive, localStart: saStart, localEnd: saEnd};
       }
-      // Recurring event (custom every-other-Monday logic)
       if (event.customNext) {
         return event.customNext(now);
       }
-      // Recurring event: find next occurrence from the event's scheduled days and time
-      let nextStart = null, nextEnd = null;
-      let nowDay = now.getUTCDay();
-      let nowH = now.getUTCHours(), nowM = now.getUTCMinutes();
+      // Find next occurrence
+      let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+      let nowDay = localNow.getDay();
       let [sH,sM] = event.startTime.split(':').map(Number);
       let [eH,eM] = event.endTime.split(':').map(Number);
-      for (let i=0; i<14; ++i) { // up to two weeks ahead
+      let nextStart = null, nextEnd = null;
+      for (let i=0; i<14; ++i) {
         let day = (nowDay + i) % 7;
         if (event.recurDaysArr && !event.recurDaysArr.includes(day)) continue;
-        let candidate = new Date(now);
-        candidate.setUTCDate(now.getUTCDate() + i);
-        candidate.setUTCHours(sH, sM, 0, 0);
-        if (i === 0 && (nowH > sH || (nowH === sH && nowM >= sM))) continue;
+        let candidate = new Date(localNow);
+        candidate.setDate(localNow.getDate() + i);
+        candidate.setHours(sH, sM, 0, 0);
+        // If today but time passed, skip to next
+        if (i === 0 && (localNow.getHours() > sH || (localNow.getHours() === sH && localNow.getMinutes() >= sM))) continue;
         nextStart = candidate;
         nextEnd = new Date(candidate);
-        nextEnd.setUTCHours(eH, eM, 0, 0);
-        // If end is less than or equal to start, add a day
+        nextEnd.setHours(eH, eM, 0, 0);
+        // If end is <= start, add a day
         if (eH < sH || (eH === sH && eM <= sM)) {
-          nextEnd.setUTCDate(nextEnd.getUTCDate() + 1);
+          nextEnd.setDate(nextEnd.getDate() + 1);
         }
         break;
       }
-      // Check if event is currently active
-      let isActive = false;
-      let localStart = new Date(now);
-      localStart.setUTCHours(sH, sM, 0, 0);
-      let localEnd = new Date(now);
-      localEnd.setUTCHours(eH, eM, 0, 0);
+      // Show as active if now in window
+      let inWindow = false;
+      let localStart = new Date(localNow);
+      localStart.setHours(sH, sM, 0, 0);
+      let localEnd = new Date(localNow);
+      localEnd.setHours(eH, eM, 0, 0);
       if (eH < sH || (eH === sH && eM <= sM)) {
-        localEnd.setUTCDate(localEnd.getUTCDate() + 1);
+        localEnd.setDate(localEnd.getDate() + 1);
       }
-      if (event.recurDaysArr && event.recurDaysArr.includes(nowDay) && now >= localStart && now < localEnd) {
-        isActive = true;
+      if (event.recurDaysArr && event.recurDaysArr.includes(nowDay) && localNow >= localStart && localNow < localEnd) {
+        inWindow = true;
         nextStart = localStart;
         nextEnd = localEnd;
       }
-      return {utcStart: nextStart, utcEnd: nextEnd, isActive, localStart: nextStart, localEnd: nextEnd};
+      let utcStart = new Date(nextStart.toLocaleString('en-US', { timeZone: 'UTC' }));
+      let utcEnd = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
+      return {utcStart, utcEnd, isActive: inWindow, localStart: nextStart, localEnd: nextEnd};
     }
 
     function renderEvents() {
@@ -386,27 +320,22 @@
     function updateTimers() {
       const now = new Date();
       events.forEach(event => {
-        const {utcStart, utcEnd, isActive, localStart, localEnd, inFuture} = getNextEventTimes(event, now);
+        const {utcStart, utcEnd, isActive, localStart, localEnd} = getNextEventTimes(event, now);
         const el = document.getElementById('timer-' + event.id);
         const tm = document.getElementById('time-' + event.id);
         const sch = document.getElementById('schedule-' + event.id);
         const dur = document.getElementById('duration-' + event.id);
 
         // Duration for display
-        let d = event.duration.d || 0, h = event.duration.h || 0, m = event.duration.m || 0;
+        let h = (event.duration && event.duration.h) || 0, m = (event.duration && event.duration.m) || 0;
 
-        function fmt(dt) {
-          return pad(dt.getUTCHours()) + ":" + pad(dt.getUTCMinutes());
-        }
-        // Show start/end time for this event (from the image data)
+        // Show start/end time from event data
         if (event.recurring) {
-          sch.innerHTML =
-            `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT`;
+          sch.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-4`;
         } else {
-          sch.innerHTML =
-            `<b>Start:</b> ${utcStart.toISOString().replace('T', ' ').substring(0, 16)} GMT &nbsp; <b>End:</b> ${utcEnd.toISOString().replace('T',' ').substring(0,16)} GMT`;
+          sch.innerHTML = `<b>Start:</b> ${fmtDateTime(localStart)} &nbsp; <b>End:</b> ${fmtDateTime(localEnd)} GMT-4`;
         }
-        dur.textContent = `Duration: ${getDurationText(d, h, m)}`;
+        dur.textContent = `Duration: ${getDurationText(h, m)}`;
 
         if (isActive) {
           let diff = Math.floor((utcEnd - now) / 1000);
@@ -415,7 +344,7 @@
           const mins = Math.floor((diff % 3600) / 60);
           const secs = diff % 60;
           el.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
-          tm.textContent = `(Ends at: ${fmt(localEnd)} GMT)`;
+          tm.textContent = `(Ends at: ${fmtTime(localEnd)} GMT-4)`;
         } else if (utcStart && utcStart > now) {
           let diff = Math.floor((utcStart - now) / 1000);
           const days = Math.floor(diff / 86400);
@@ -423,7 +352,7 @@
           const mins = Math.floor((diff % 3600) / 60);
           const secs = diff % 60;
           el.innerHTML = `<span class="inactive">Starts in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
-          tm.textContent = `(Starts at: ${fmt(localStart)} GMT)`;
+          tm.textContent = `(Starts at: ${fmtTime(localStart)} GMT-4)`;
         } else {
           el.innerHTML = `<span class="inactive">Not active</span>`;
           tm.textContent = '';
