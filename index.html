@@ -29,7 +29,6 @@
     .event-title { font-weight: bold; font-size: 1.25em; margin-bottom: 8px; }
     .event-desc { color: #b2bed6; margin-bottom: 18px; font-size: 1em; }
     .timer { font-size: 1.5em; font-family: 'Consolas', monospace; color: #ffe066; margin-bottom: 3px; letter-spacing: 1px; }
-    .event-time { font-size: 1em; color: #a8e1f7; margin-bottom: 2px; }
     .event-schedule { font-size: 0.97em; color: #eee; margin-bottom: 3px; }
     .event-duration { font-size: 0.97em; color: #90ee90; margin-bottom: 8px; }
     .active { color: #90ee90; }
@@ -115,6 +114,21 @@
       return tzLabels[tz] || `All Times (${tz})`;
     }
 
+    function fmtTzTime(dt) {
+      // Show as HH:MM in the selected timezone
+      try {
+        return dt.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: tz
+        });
+      } catch (e) {
+        // fallback to UTC display if unsupported
+        return dt.getUTCHours().toString().padStart(2,"0") + ":" + dt.getUTCMinutes().toString().padStart(2,"0");
+      }
+    }
+
     const events = [
       { id: 'ranked_match_season', summary: 'Ranked Match Season', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'critical_conquest', summary: 'Critical Conquest', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
@@ -122,7 +136,8 @@
       { id: 'void_realms', summary: 'Void Realms', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'energy_replenishment', summary: 'Energy Replenishment Daily Reset', desc: '06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'tempered_trials_reset', summary: 'Tempered Trials Daily Reset', desc: '06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
-      { id: 'hexchess_weekly_rewards', summary: 'Hexchess Weekly Rewards Reset', desc: 'Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1] }
+      { id: 'hexchess_weekly_rewards', summary: 'Hexchess Weekly Rewards Reset', desc: 'Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1] },
+      { id: 'hexchess_rewards_refresh', summary: 'Hexchess (Rewards Refresh)', desc: 'Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1] },
       { id: 'arena_reset', summary: 'Arena Reset (Every other Monday)', desc: 'Every other Monday 06:00–06:01', startTime: '06:00', endTime: '06:01', recurring: true, recurDaysArr: [1],
         customNext: function(now) {
           function getISOWeek(date) {
@@ -227,7 +242,6 @@
           foundNext = true;
           break;
         }
-        // If currently active, set start/end to today
         let active = false;
         let currStart = new Date(localNow); currStart.setHours(sH, sM, 0, 0);
         let currEnd = new Date(localNow); currEnd.setHours(eH, eM, 0, 0);
@@ -238,8 +252,6 @@
           localEnd = currEnd;
           foundNext = true;
         }
-
-        // Arena reset (every other Monday) custom
         if (event.customNext) {
           let result = event.customNext(now);
           localStart = result.nextStart;
@@ -250,8 +262,13 @@
         let duration = calcDuration(event.startTime, event.endTime);
         let durEl = document.getElementById('duration-' + event.id);
         if (durEl) durEl.textContent = `Duration: ${getDurationText(duration.h, duration.m)}`;
+
         let schEl = document.getElementById('schedule-' + event.id);
-        if (schEl) schEl.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} (${getTzLabel().replace("All Times ","").replace("GMT","UTC")})`;
+        if (schEl) {
+          let startTimeLabel = localStart ? fmtTzTime(localStart) : event.startTime;
+          let endTimeLabel = localEnd ? fmtTzTime(localEnd) : event.endTime;
+          schEl.innerHTML = `<b>Start:</b> ${event.startTime} (${startTimeLabel}) &nbsp; <b>End:</b> ${event.endTime} (${endTimeLabel})<br>${getTzLabel().replace("All Times ","")}`;
+        }
 
         let timerEl = document.getElementById('timer-' + event.id);
         let cardEl = document.getElementById('card-' + event.id);
