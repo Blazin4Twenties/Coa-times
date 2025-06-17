@@ -23,7 +23,7 @@
   <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT-4/Eastern)</h1>
   <div class="events-grid" id="events"></div>
   <script>
-    // Use America/New_York, which is GMT-4 during daylight savings
+    // Eastern Time (Daylight savings aware, so matches -4 currently)
     const tz = "America/New_York";
 
     function pad(n){return n.toString().padStart(2,'0');}
@@ -57,8 +57,8 @@
         startTime: '06:00', endTime: '06:01',
         recurring: true,
         recurDaysArr: [1],
-        duration: { h:0, m:1 },
         customNext: function(now) {
+          // Find next even ISO week Monday 6:00
           function getISOWeek(date) {
             const tmp = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const dayNum = tmp.getDay() || 7;
@@ -86,7 +86,14 @@
           let nextMondayUTC = new Date(nextMonday.toLocaleString('en-US', { timeZone: 'UTC' }));
           let nextEndUTC = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
           let isActive = (now >= nextMondayUTC && now < nextEndUTC);
-          return {utcStart: nextMondayUTC, utcEnd: nextEndUTC, isActive, localStart: nextMonday, localEnd: nextEnd};
+          return {
+            utcStart: nextMondayUTC,
+            utcEnd: nextEndUTC,
+            isActive,
+            localStart: nextMonday,
+            localEnd: nextEnd,
+            duration: { h:0, m:1 }
+          };
         }
       },
       {
@@ -95,8 +102,7 @@
         desc: 'All day',
         startTime: '00:00', endTime: '00:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:24, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'hexchess_rewards_refresh',
@@ -104,8 +110,7 @@
         desc: 'Monday 06:00–06:01',
         startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDaysArr: [1],
-        duration: { h:0, m:1 }
+        recurDaysArr: [1]
       },
       {
         id: 'energy_replenishment',
@@ -113,8 +118,7 @@
         desc: 'Daily 06:00–06:01',
         startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:0, m:1 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'tempered_trials_reset',
@@ -122,8 +126,7 @@
         desc: 'Daily 06:00–06:01',
         startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:0, m:1 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'hexchess_weekly_rewards',
@@ -131,8 +134,7 @@
         desc: 'Monday 06:00–06:01',
         startTime: '06:00', endTime: '06:01',
         recurring: true,
-        recurDaysArr: [1],
-        duration: { h:0, m:1 }
+        recurDaysArr: [1]
       },
       {
         id: 'arena_crystal_morning',
@@ -140,8 +142,7 @@
         desc: '07:00–10:00',
         startTime: '07:00', endTime: '10:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:3, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'arena_crystal_noon',
@@ -149,8 +150,7 @@
         desc: '12:00–14:00',
         startTime: '12:00', endTime: '14:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:2, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'mine_wars_1',
@@ -158,8 +158,7 @@
         desc: '12:00–14:00',
         startTime: '12:00', endTime: '14:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:2, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'ancient_battlefield_1',
@@ -167,8 +166,7 @@
         desc: '12:30–14:00',
         startTime: '12:30', endTime: '14:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:1, m:30 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'arena_crystal_evening',
@@ -176,8 +174,7 @@
         desc: '19:00–22:00',
         startTime: '19:00', endTime: '22:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:3, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'ancient_battlefield_2',
@@ -185,8 +182,7 @@
         desc: '20:00–22:00',
         startTime: '20:00', endTime: '22:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:2, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'abyssal_frontier',
@@ -194,8 +190,7 @@
         desc: 'Monday 20:00–20:15',
         startTime: '20:00', endTime: '20:15',
         recurring: true,
-        recurDaysArr: [1],
-        duration: { h:0, m:15 }
+        recurDaysArr: [1]
       },
       {
         id: 'mine_wars_2',
@@ -203,8 +198,7 @@
         desc: '21:00–23:00',
         startTime: '21:00', endTime: '23:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:2, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'swiftshade_racetrack',
@@ -212,8 +206,7 @@
         desc: 'Tuesday 20:00–20:15',
         startTime: '20:00', endTime: '20:15',
         recurring: true,
-        recurDaysArr: [2],
-        duration: { h:0, m:15 }
+        recurDaysArr: [2]
       },
       {
         id: 'gold_rush_adventure',
@@ -221,8 +214,7 @@
         desc: 'Saturday 20:00–20:15',
         startTime: '20:00', endTime: '20:15',
         recurring: true,
-        recurDaysArr: [6],
-        duration: { h:0, m:15 }
+        recurDaysArr: [6]
       },
       {
         id: 'duel_bonds',
@@ -230,8 +222,7 @@
         desc: 'All day',
         startTime: '00:00', endTime: '00:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:24, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'void_realms',
@@ -239,29 +230,42 @@
         desc: 'All day',
         startTime: '00:00', endTime: '00:00',
         recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6],
-        duration: { h:24, m:0 }
+        recurDaysArr: [0,1,2,3,4,5,6]
       }
     ];
 
+    function getDurationFromStartEnd(start, end) {
+      let diff = (end - start);
+      if (diff < 0) diff += 24*60*60*1000;
+      let min = Math.floor(diff/60000);
+      let h = Math.floor(min/60);
+      let m = min%60;
+      return {h, m};
+    }
+
     function getNextEventTimes(event, now) {
-      // One-time event
       if (!event.recurring) {
         let start = new Date(event.start);
         let end = new Date(event.end);
         let isActive = now >= start && now < end;
-        let saStart = new Date(start.toLocaleString('en-US', {timeZone: tz}));
-        let saEnd = new Date(end.toLocaleString('en-US', {timeZone: tz}));
-        return {utcStart: start, utcEnd: end, isActive, localStart: saStart, localEnd: saEnd};
+        let localStart = new Date(start.toLocaleString('en-US', {timeZone: tz}));
+        let localEnd = new Date(end.toLocaleString('en-US', {timeZone: tz}));
+        let dur = getDurationFromStartEnd(localStart, localEnd);
+        return {utcStart: start, utcEnd: end, isActive, localStart, localEnd, duration: dur};
       }
       if (event.customNext) {
-        return event.customNext(now);
+        let result = event.customNext(now);
+        // Always recompute duration from localStart/localEnd
+        let dur = getDurationFromStartEnd(result.localStart, result.localEnd);
+        result.duration = dur;
+        return result;
       }
-      // Find next occurrence
+      // Recurring
       let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
       let nowDay = localNow.getDay();
       let [sH,sM] = event.startTime.split(':').map(Number);
       let [eH,eM] = event.endTime.split(':').map(Number);
+
       let nextStart = null, nextEnd = null;
       for (let i=0; i<14; ++i) {
         let day = (nowDay + i) % 7;
@@ -294,9 +298,12 @@
         nextStart = localStart;
         nextEnd = localEnd;
       }
+      // Duration is always the local time difference
+      let dur = getDurationFromStartEnd(localStart, localEnd);
+
       let utcStart = new Date(nextStart.toLocaleString('en-US', { timeZone: 'UTC' }));
       let utcEnd = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
-      return {utcStart, utcEnd, isActive: inWindow, localStart: nextStart, localEnd: nextEnd};
+      return {utcStart, utcEnd, isActive: inWindow, localStart: nextStart, localEnd: nextEnd, duration: dur};
     }
 
     function renderEvents() {
@@ -320,14 +327,11 @@
     function updateTimers() {
       const now = new Date();
       events.forEach(event => {
-        const {utcStart, utcEnd, isActive, localStart, localEnd} = getNextEventTimes(event, now);
+        const {utcStart, utcEnd, isActive, localStart, localEnd, duration} = getNextEventTimes(event, now);
         const el = document.getElementById('timer-' + event.id);
         const tm = document.getElementById('time-' + event.id);
         const sch = document.getElementById('schedule-' + event.id);
         const dur = document.getElementById('duration-' + event.id);
-
-        // Duration for display
-        let h = (event.duration && event.duration.h) || 0, m = (event.duration && event.duration.m) || 0;
 
         // Show start/end time from event data
         if (event.recurring) {
@@ -335,6 +339,8 @@
         } else {
           sch.innerHTML = `<b>Start:</b> ${fmtDateTime(localStart)} &nbsp; <b>End:</b> ${fmtDateTime(localEnd)} GMT-4`;
         }
+        // Duration from local times
+        let h = duration && duration.h || 0, m = duration && duration.m || 0;
         dur.textContent = `Duration: ${getDurationText(h, m)}`;
 
         if (isActive) {
