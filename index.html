@@ -33,32 +33,84 @@
       if (m > 0) result.push(m + "m");
       return result.length ? result.join(" ") : "Instant";
     }
-    function fmtTime(dt) {
-      return dt.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz});
-    }
-    function fmtDateTime(dt) {
-      return dt.toLocaleString('en-US', {year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hour12: false, timeZone: tz});
-    }
 
-    // All recurring events, times as per your screenshot, in America/New_York (GMT-4)
     const events = [
+      // All-day events
       {
         id: 'ranked_match_season',
         summary: 'Ranked Match Season',
-        desc: '',
-        start: '2025-06-07T00:00:00-04:00',
-        end:   '2025-07-01T00:00:00-04:00',
-        recurring: false
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6]
       },
+      {
+        id: 'critical_conquest',
+        summary: 'Critical Conquest',
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6]
+      },
+      {
+        id: 'duel_bonds',
+        summary: 'Duel Bonds',
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6]
+      },
+      {
+        id: 'void_realms',
+        summary: 'Void Realms',
+        desc: 'All day',
+        startTime: '00:00', endTime: '00:00',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6]
+      },
+      // Daily resets / short events
+      {
+        id: 'energy_replenishment',
+        summary: 'Energy Replenishment Daily Reset',
+        desc: '06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6]
+      },
+      {
+        id: 'tempered_trials_reset',
+        summary: 'Tempered Trials Daily Reset',
+        desc: '06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
+        recurring: true,
+        recurDaysArr: [0,1,2,3,4,5,6]
+      },
+      // Weekly resets
+      {
+        id: 'hexchess_weekly_rewards',
+        summary: 'Hexchess Weekly Rewards Reset',
+        desc: 'Monday 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
+        recurring: true,
+        recurDaysArr: [1]
+      },
+      {
+        id: 'hexchess_rewards_refresh',
+        summary: 'Hexchess (Rewards Refresh)',
+        desc: 'Monday 06:00–06:01',
+        startTime: '06:00', endTime: '06:01',
+        recurring: true,
+        recurDaysArr: [1]
+      },
+      // Every other Monday
       {
         id: 'arena_reset',
         summary: 'Arena Reset (Every other Monday)',
-        desc: 'Every other Monday at 06:00–06:01',
+        desc: 'Every other Monday 06:00–06:01',
         startTime: '06:00', endTime: '06:01',
         recurring: true,
         recurDaysArr: [1],
         customNext: function(now) {
-          // Find next even ISO week Monday 6:00
           function getISOWeek(date) {
             const tmp = new Date(date.getFullYear(), date.getMonth(), date.getDate());
             const dayNum = tmp.getDay() || 7;
@@ -86,56 +138,20 @@
           let nextMondayUTC = new Date(nextMonday.toLocaleString('en-US', { timeZone: 'UTC' }));
           let nextEndUTC = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
           let isActive = (now >= nextMondayUTC && now < nextEndUTC);
+          let durationMin = ((nextEnd - nextMonday) / 60000);
+          let durationH = Math.floor(durationMin/60);
+          let durationM = durationMin%60;
           return {
             utcStart: nextMondayUTC,
             utcEnd: nextEndUTC,
             isActive,
             localStart: nextMonday,
             localEnd: nextEnd,
-            duration: { h:0, m:1 }
+            durationH, durationM
           };
         }
       },
-      {
-        id: 'critical_conquest',
-        summary: 'Critical Conquest',
-        desc: 'All day',
-        startTime: '00:00', endTime: '00:00',
-        recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      {
-        id: 'hexchess_rewards_refresh',
-        summary: 'Hexchess (Rewards Refresh)',
-        desc: 'Monday 06:00–06:01',
-        startTime: '06:00', endTime: '06:01',
-        recurring: true,
-        recurDaysArr: [1]
-      },
-      {
-        id: 'energy_replenishment',
-        summary: 'Energy Replenishment Daily Reset',
-        desc: 'Daily 06:00–06:01',
-        startTime: '06:00', endTime: '06:01',
-        recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      {
-        id: 'tempered_trials_reset',
-        summary: 'Tempered Trials Daily Reset',
-        desc: 'Daily 06:00–06:01',
-        startTime: '06:00', endTime: '06:01',
-        recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      {
-        id: 'hexchess_weekly_rewards',
-        summary: 'Hexchess Weekly Rewards Reset',
-        desc: 'Monday 06:00–06:01',
-        startTime: '06:00', endTime: '06:01',
-        recurring: true,
-        recurDaysArr: [1]
-      },
+      // Event windows
       {
         id: 'arena_crystal_morning',
         summary: 'Arena (Crystal Arena) Morning',
@@ -184,6 +200,7 @@
         recurring: true,
         recurDaysArr: [0,1,2,3,4,5,6]
       },
+      // Golden Fleece
       {
         id: 'abyssal_frontier',
         summary: 'Abyssal Frontier (Golden Fleece)',
@@ -191,14 +208,6 @@
         startTime: '20:00', endTime: '20:15',
         recurring: true,
         recurDaysArr: [1]
-      },
-      {
-        id: 'mine_wars_2',
-        summary: 'Deeprock Vein – Mine Wars',
-        desc: '21:00–23:00',
-        startTime: '21:00', endTime: '23:00',
-        recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6]
       },
       {
         id: 'swiftshade_racetrack',
@@ -217,50 +226,20 @@
         recurDaysArr: [6]
       },
       {
-        id: 'duel_bonds',
-        summary: 'Duel Bonds',
-        desc: 'All day',
-        startTime: '00:00', endTime: '00:00',
-        recurring: true,
-        recurDaysArr: [0,1,2,3,4,5,6]
-      },
-      {
-        id: 'void_realms',
-        summary: 'Void Realms',
-        desc: 'All day',
-        startTime: '00:00', endTime: '00:00',
+        id: 'mine_wars_2',
+        summary: 'Deeprock Vein – Mine Wars',
+        desc: '21:00–23:00',
+        startTime: '21:00', endTime: '23:00',
         recurring: true,
         recurDaysArr: [0,1,2,3,4,5,6]
       }
     ];
 
-    function getDurationFromStartEnd(start, end) {
-      let diff = (end - start);
-      if (diff < 0) diff += 24*60*60*1000;
-      let min = Math.floor(diff/60000);
-      let h = Math.floor(min/60);
-      let m = min%60;
-      return {h, m};
-    }
-
+    // Calculate next occurrence, actual duration, and if active
     function getNextEventTimes(event, now) {
-      if (!event.recurring) {
-        let start = new Date(event.start);
-        let end = new Date(event.end);
-        let isActive = now >= start && now < end;
-        let localStart = new Date(start.toLocaleString('en-US', {timeZone: tz}));
-        let localEnd = new Date(end.toLocaleString('en-US', {timeZone: tz}));
-        let dur = getDurationFromStartEnd(localStart, localEnd);
-        return {utcStart: start, utcEnd: end, isActive, localStart, localEnd, duration: dur};
-      }
       if (event.customNext) {
-        let result = event.customNext(now);
-        // Always recompute duration from localStart/localEnd
-        let dur = getDurationFromStartEnd(result.localStart, result.localEnd);
-        result.duration = dur;
-        return result;
+        return event.customNext(now);
       }
-      // Recurring
       let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
       let nowDay = localNow.getDay();
       let [sH,sM] = event.startTime.split(':').map(Number);
@@ -284,8 +263,8 @@
         }
         break;
       }
-      // Show as active if now in window
-      let inWindow = false;
+
+      // Is event active now?
       let localStart = new Date(localNow);
       localStart.setHours(sH, sM, 0, 0);
       let localEnd = new Date(localNow);
@@ -293,17 +272,28 @@
       if (eH < sH || (eH === sH && eM <= sM)) {
         localEnd.setDate(localEnd.getDate() + 1);
       }
-      if (event.recurDaysArr && event.recurDaysArr.includes(nowDay) && localNow >= localStart && localNow < localEnd) {
-        inWindow = true;
+      let inWindow = event.recurDaysArr.includes(nowDay) && localNow >= localStart && localNow < localEnd;
+
+      // If active, use today's window, else use next start/end
+      if (inWindow) {
         nextStart = localStart;
         nextEnd = localEnd;
       }
-      // Duration is always the local time difference
-      let dur = getDurationFromStartEnd(localStart, localEnd);
 
+      // For duration, always compute from start to end in local time
+      let durationMin = ((nextEnd - nextStart) / 60000);
+      let durationH = Math.floor(durationMin/60);
+      let durationM = durationMin%60;
+
+      // Convert nextStart/nextEnd from local time to UTC for timer math
       let utcStart = new Date(nextStart.toLocaleString('en-US', { timeZone: 'UTC' }));
       let utcEnd = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
-      return {utcStart, utcEnd, isActive: inWindow, localStart: nextStart, localEnd: nextEnd, duration: dur};
+
+      return {utcStart, utcEnd, isActive: inWindow, localStart: nextStart, localEnd: nextEnd, durationH, durationM};
+    }
+
+    function fmtTime(dt) {
+      return dt.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz});
     }
 
     function renderEvents() {
@@ -327,21 +317,14 @@
     function updateTimers() {
       const now = new Date();
       events.forEach(event => {
-        const {utcStart, utcEnd, isActive, localStart, localEnd, duration} = getNextEventTimes(event, now);
+        const {utcStart, utcEnd, isActive, localStart, localEnd, durationH, durationM} = getNextEventTimes(event, now);
         const el = document.getElementById('timer-' + event.id);
         const tm = document.getElementById('time-' + event.id);
         const sch = document.getElementById('schedule-' + event.id);
         const dur = document.getElementById('duration-' + event.id);
 
-        // Show start/end time from event data
-        if (event.recurring) {
-          sch.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-4`;
-        } else {
-          sch.innerHTML = `<b>Start:</b> ${fmtDateTime(localStart)} &nbsp; <b>End:</b> ${fmtDateTime(localEnd)} GMT-4`;
-        }
-        // Duration from local times
-        let h = duration && duration.h || 0, m = duration && duration.m || 0;
-        dur.textContent = `Duration: ${getDurationText(h, m)}`;
+        sch.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-4`;
+        dur.textContent = `Duration: ${getDurationText(durationH, durationM)}`;
 
         if (isActive) {
           let diff = Math.floor((utcEnd - now) / 1000);
