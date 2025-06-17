@@ -24,7 +24,7 @@
   <div class="events-grid" id="events"></div>
   <script>
     // Use fixed UTC-5 offset, not daylight savings
-    const tz = 'Etc/GMT+5'; // GMT-5 (Eastern Time US & Canada, standard/winter, NO daylight savings)
+    const tz = 'Etc/GMT+5'; // GMT-5 (Eastern Time US & Canada, no DST)
 
     function pad(n){return n.toString().padStart(2,'0');}
     function getDurationText(h, m) {
@@ -34,9 +34,9 @@
       return result.length ? result.join(" ") : "Instant";
     }
 
-    // All events from your previous list/calendar image, using GMT-5
+    // All events from your calendar image, using GMT-5
     const events = [
-      // All-day events
+      // All-day events (00:00-00:00, duration 24h)
       {
         id: 'ranked_match_season',
         summary: 'Ranked Match Season',
@@ -136,18 +136,10 @@
             nextMonday.setDate(nextMonday.getDate() + 7);
           }
           let nextEnd = new Date(nextMonday.getTime() + 60000);
-          let nextMondayUTC = new Date(nextMonday.toLocaleString('en-US', { timeZone: 'UTC' }));
-          let nextEndUTC = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
-          let isActive = (now >= nextMondayUTC && now < nextEndUTC);
           let durationMin = ((nextEnd - nextMonday) / 60000);
           let durationH = Math.floor(durationMin/60);
           let durationM = durationMin%60;
           return {
-            utcStart: nextMondayUTC,
-            utcEnd: nextEndUTC,
-            isActive,
-            localStart: nextMonday,
-            localEnd: nextEnd,
             durationH, durationM
           };
         }
@@ -236,61 +228,17 @@
       }
     ];
 
-    // Calculate next occurrence, actual duration, and if active
-    function getNextEventTimes(event, now) {
-      if (event.customNext) {
-        return event.customNext(now);
-      }
-      let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-      let nowDay = localNow.getDay();
-      let [sH, sM] = event.startTime.split(':').map(Number);
-      let [eH, eM] = event.endTime.split(':').map(Number);
-
-      let nextStart = null, nextEnd = null;
-      for (let i=0; i<14; ++i) {
-        let day = (nowDay + i) % 7;
-        if (event.recurDaysArr && !event.recurDaysArr.includes(day)) continue;
-        let candidate = new Date(localNow);
-        candidate.setDate(localNow.getDate() + i);
-        candidate.setHours(sH, sM, 0, 0);
-        // If today but time passed, skip to next
-        if (i === 0 && (localNow.getHours() > sH || (localNow.getHours() === sH && localNow.getMinutes() >= sM))) continue;
-        nextStart = candidate;
-        nextEnd = new Date(candidate);
-        nextEnd.setHours(eH, eM, 0, 0);
-        // If end is <= start, add a day
-        if (eH < sH || (eH === sH && eM <= sM)) {
-          nextEnd.setDate(nextEnd.getDate() + 1);
-        }
-        break;
-      }
-
-      // Is event active now?
-      let localStart = new Date(localNow);
-      localStart.setHours(sH, sM, 0, 0);
-      let localEnd = new Date(localNow);
-      localEnd.setHours(eH, eM, 0, 0);
-      if (eH < sH || (eH === sH && eM <= sM)) {
-        localEnd.setDate(localEnd.getDate() + 1);
-      }
-      let inWindow = event.recurDaysArr.includes(nowDay) && localNow >= localStart && localNow < localEnd;
-
-      // If active, use today's window, else use next start/end
-      if (inWindow) {
-        nextStart = localStart;
-        nextEnd = localEnd;
-      }
-
-      // Duration is always the local time difference
-      let durationMin = ((nextEnd - nextStart) / 60000);
-      let durationH = Math.floor(durationMin/60);
-      let durationM = durationMin%60;
-
-      // Convert nextStart/nextEnd from local time to UTC for timer math
-      let utcStart = new Date(nextStart.toLocaleString('en-US', { timeZone: 'UTC' }));
-      let utcEnd = new Date(nextEnd.toLocaleString('en-US', { timeZone: 'UTC' }));
-
-      return {utcStart, utcEnd, isActive: inWindow, localStart: nextStart, localEnd: nextEnd, durationH, durationM};
+    // Calculate duration in h/m from start/end time strings
+    function calcDuration(startStr, endStr) {
+      let [sh, sm] = startStr.split(':').map(Number);
+      let [eh, em] = endStr.split(':').map(Number);
+      let startMins = sh * 60 + sm;
+      let endMins = eh * 60 + em;
+      let durMins = endMins - startMins;
+      if (durMins <= 0) durMins += 24*60;
+      let h = Math.floor(durMins / 60);
+      let m = durMins % 60;
+      return { h, m, mins: durMins };
     }
 
     function fmtTime(dt) {
@@ -309,7 +257,6 @@
           <div class="event-duration" id="duration-${event.id}"></div>
           <div class="event-schedule" id="schedule-${event.id}"></div>
           <div class="timer" id="timer-${event.id}"></div>
-          <div class="event-time" id="time-${event.id}"></div>
         `;
         container.appendChild(card);
       });
@@ -318,34 +265,67 @@
     function updateTimers() {
       const now = new Date();
       events.forEach(event => {
-        const {utcStart, utcEnd, isActive, localStart, localEnd, durationH, durationM} = getNextEventTimes(event, now);
-        const el = document.getElementById('timer-' + event.id);
-        const tm = document.getElementById('time-' + event.id);
-        const sch = document.getElementById('schedule-' + event.id);
-        const dur = document.getElementById('duration-' + event.id);
+        // Always just show simple duration countdown from start to end time in UTC-5
+        let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+        let nowDay = localNow.getDay();
+        let [sH, sM] = event.startTime.split(':').map(Number);
+        let [eH, eM] = event.endTime.split(':').map(Number);
 
-        sch.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-5`;
-        dur.textContent = `Duration: ${getDurationText(durationH, durationM)}`;
+        // Find next occurrence window in local time
+        let localStart = null, localEnd = null;
+        for (let i=0; i<14; ++i) {
+          let day = (nowDay + i) % 7;
+          if (event.recurDaysArr && !event.recurDaysArr.includes(day)) continue;
+          let candidate = new Date(localNow);
+          candidate.setDate(localNow.getDate() + i);
+          candidate.setHours(sH, sM, 0, 0);
+          // If today but time passed, skip to next
+          if (i === 0 && (localNow.getHours() > sH || (localNow.getHours() === sH && localNow.getMinutes() >= sM))) continue;
+          localStart = candidate;
+          localEnd = new Date(candidate);
+          localEnd.setHours(eH, eM, 0, 0);
+          // If end is <= start, add a day
+          if (eH < sH || (eH === sH && eM <= sM)) {
+            localEnd.setDate(localEnd.getDate() + 1);
+          }
+          break;
+        }
+        // If currently in this event window, set start/end to today
+        let active = false;
+        let currStart = new Date(localNow); currStart.setHours(sH, sM, 0, 0);
+        let currEnd = new Date(localNow); currEnd.setHours(eH, eM, 0, 0);
+        if (eH < sH || (eH === sH && eM <= sM)) currEnd.setDate(currEnd.getDate() + 1);
+        if (event.recurDaysArr.includes(nowDay) && localNow >= currStart && localNow < currEnd) {
+          active = true;
+          localStart = currStart;
+          localEnd = currEnd;
+        }
 
-        if (isActive) {
-          let diff = Math.floor((utcEnd - now) / 1000);
-          const days = Math.floor(diff / 86400);
-          const hours = Math.floor((diff % 86400) / 3600);
-          const mins = Math.floor((diff % 3600) / 60);
-          const secs = diff % 60;
-          el.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
-          tm.textContent = `(Ends at: ${fmtTime(localEnd)} GMT-5)`;
-        } else if (utcStart && utcStart > now) {
-          let diff = Math.floor((utcStart - now) / 1000);
-          const days = Math.floor(diff / 86400);
-          const hours = Math.floor((diff % 86400) / 3600);
-          const mins = Math.floor((diff % 3600) / 60);
-          const secs = diff % 60;
-          el.innerHTML = `<span class="inactive">Starts in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
-          tm.textContent = `(Starts at: ${fmtTime(localStart)} GMT-5)`;
+        // Timer logic: If active, show time left from start to end, else show full duration
+        const timerEl = document.getElementById('timer-' + event.id);
+        const durEl = document.getElementById('duration-' + event.id);
+        const schEl = document.getElementById('schedule-' + event.id);
+
+        let duration = calcDuration(event.startTime, event.endTime);
+        durEl.textContent = `Duration: ${getDurationText(duration.h, duration.m)}`;
+        schEl.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-5`;
+
+        let secsLeft;
+        if (active) {
+          secsLeft = Math.max(0, Math.floor((localEnd - localNow) / 1000));
         } else {
-          el.innerHTML = `<span class="inactive">Not active</span>`;
-          tm.textContent = '';
+          // Not active: timer shows the full duration for the event (as a simple countdown)
+          secsLeft = duration.mins * 60;
+        }
+        const days = Math.floor(secsLeft / 86400);
+        const hours = Math.floor((secsLeft % 86400) / 3600);
+        const mins = Math.floor((secsLeft % 3600) / 60);
+        const secs = secsLeft % 60;
+
+        if (active) {
+          timerEl.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
+        } else {
+          timerEl.innerHTML = `<span class="inactive">Duration: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
         }
       });
     }
