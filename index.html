@@ -12,9 +12,10 @@
     .event-desc { color: #b2bed6; margin-bottom: 18px; font-size: 1em; }
     .timer { font-size: 1.5em; font-family: 'Consolas', monospace; color: #ffe066; margin-bottom: 3px; letter-spacing: 1px; }
     .event-time { font-size: 1em; color: #a8e1f7; margin-bottom: 2px; }
+    .event-schedule { font-size: 0.97em; color: #eee; margin-bottom: 3px; }
+    .event-duration { font-size: 0.97em; color: #90ee90; margin-bottom: 8px; }
     .active { color: #90ee90; }
     .inactive { color: #ffe066; }
-    .event-schedule { font-size: 0.97em; color: #eee; margin-bottom: 3px; }
     @media (max-width: 1100px) { .events-grid { flex-direction: column; align-items: center; } .event-card { min-width: 250px; max-width: 90vw; } }
   </style>
 </head>
@@ -22,15 +23,19 @@
   <h1>Crystal of Atlan - Live Event Countdown Timers</h1>
   <div class="events-grid" id="events"></div>
   <script>
-    // Utility
     function pad(n){return n.toString().padStart(2,'0');}
     function toTimeZone(date, tzString) {
-      // Converts a date to the given tzString (does not preserve milliseconds)
       let local = date.toLocaleString('en-US', { timeZone: tzString });
       return new Date(local);
     }
+    function getDurationText(hours, minutes) {
+      let result = [];
+      if (hours > 0) result.push(hours + "h");
+      if (minutes > 0) result.push(minutes + "m");
+      return result.length ? result.join(" ") : "Instant";
+    }
 
-    // Event definitions (with start/end times)
+    // Event definitions (with start/end times and durations)
     const events = [
       {
         id: 'ancient_battlefield_1',
@@ -38,7 +43,9 @@
         desc: 'Matchmaking available daily',
         tz: 'America/New_York',
         startHour: 12, startMinute: 30,
-        endHour: 14, endMinute: 0
+        endHour: 14, endMinute: 0,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 1, minutes: 30 }
       },
       {
         id: 'ancient_battlefield_2',
@@ -46,7 +53,9 @@
         desc: 'Matchmaking available daily',
         tz: 'America/New_York',
         startHour: 20, startMinute: 0,
-        endHour: 22, endMinute: 0
+        endHour: 22, endMinute: 0,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 2, minutes: 0 }
       },
       {
         id: 'mine_wars_1',
@@ -54,7 +63,9 @@
         desc: 'Opens daily',
         tz: 'America/New_York',
         startHour: 12, startMinute: 0,
-        endHour: 14, endMinute: 0
+        endHour: 14, endMinute: 0,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 2, minutes: 0 }
       },
       {
         id: 'mine_wars_2',
@@ -62,7 +73,9 @@
         desc: 'Opens daily',
         tz: 'America/New_York',
         startHour: 21, startMinute: 0,
-        endHour: 23, endMinute: 0
+        endHour: 23, endMinute: 0,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 2, minutes: 0 }
       },
       {
         id: 'spirit_frenzy_weekday',
@@ -71,7 +84,8 @@
         tz: 'America/New_York',
         startHour: 20, startMinute: 0,
         endHour: 20, endMinute: 15,
-        days: [1,2,3,4,5]
+        days: [1,2,3,4,5],
+        duration: { hours: 0, minutes: 15 }
       },
       {
         id: 'spirit_frenzy_weekend',
@@ -80,7 +94,8 @@
         tz: 'America/New_York',
         startHour: 20, startMinute: 0,
         endHour: 20, endMinute: 15,
-        days: [0,6]
+        days: [0,6],
+        duration: { hours: 0, minutes: 15 }
       },
       {
         id: 'joint_siege_friday',
@@ -89,7 +104,8 @@
         tz: 'America/New_York',
         startHour: 20, startMinute: 30,
         endHour: 21, endMinute: 0,
-        days: [5]
+        days: [5],
+        duration: { hours: 0, minutes: 30 }
       },
       {
         id: 'joint_siege_sunday',
@@ -98,7 +114,8 @@
         tz: 'America/New_York',
         startHour: 20, startMinute: 30,
         endHour: 21, endMinute: 0,
-        days: [0]
+        days: [0],
+        duration: { hours: 0, minutes: 30 }
       },
       {
         id: 'arena_early',
@@ -106,7 +123,9 @@
         desc: 'Open daily',
         tz: 'Asia/Shanghai',
         startHour: 12, startMinute: 0,
-        endHour: 14, endMinute: 0
+        endHour: 14, endMinute: 0,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 2, minutes: 0 }
       },
       {
         id: 'arena_late',
@@ -114,11 +133,12 @@
         desc: 'Open daily',
         tz: 'Asia/Shanghai',
         startHour: 19, startMinute: 0,
-        endHour: 22, endMinute: 0
+        endHour: 22, endMinute: 0,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 3, minutes: 0 }
       }
     ];
 
-    // Find the next event start (and the corresponding end) for each event
     function getNextEventTimes({startHour, startMinute, endHour, endMinute, tz, days}, nowUTC) {
       let nowLocal = toTimeZone(nowUTC, tz);
       let localDay = nowLocal.getDay();
@@ -126,23 +146,19 @@
       let localMonth = nowLocal.getMonth();
       let localDate = nowLocal.getDate();
 
-      // Which days of week does this event occur? (default: every day)
       let eventDays = days || [0,1,2,3,4,5,6];
 
-      // Find next start time
       let nextStart = null, nextEnd = null;
       for (let i = 0; i <= 7; ++i) {
         let d = (localDay + i) % 7;
         if (eventDays.includes(d)) {
           let candidateStart = new Date(localYear, localMonth, localDate + i, startHour, startMinute, 0, 0);
-          // If today but time passed, skip to next
           if (i === 0 && (nowLocal.getHours() > startHour || (nowLocal.getHours() === startHour && nowLocal.getMinutes() >= startMinute))) continue;
           nextStart = candidateStart;
           nextEnd = new Date(localYear, localMonth, localDate + i, endHour, endMinute, 0, 0);
           break;
         }
       }
-      // If event is ongoing right now, also show current active window
       let currentStart = new Date(localYear, localMonth, localDate, startHour, startMinute, 0, 0);
       let currentEnd = new Date(localYear, localMonth, localDate, endHour, endMinute, 0, 0);
       let isActive = eventDays.includes(localDay) &&
@@ -151,7 +167,6 @@
         nextStart = currentStart;
         nextEnd = currentEnd;
       }
-      // Figure out UTC times for display/computation
       let offsetStart = nextStart.getTime() - toTimeZone(nextStart, 'UTC').getTime();
       let utcStart = new Date(nextStart.getTime() - offsetStart);
       let offsetEnd = nextEnd.getTime() - toTimeZone(nextEnd, 'UTC').getTime();
@@ -168,6 +183,7 @@
         card.innerHTML = `
           <div class="event-title">${event.summary}</div>
           <div class="event-desc">${event.desc}</div>
+          <div class="event-duration" id="duration-${event.id}"></div>
           <div class="event-schedule" id="schedule-${event.id}"></div>
           <div class="timer" id="timer-${event.id}"></div>
           <div class="event-time" id="time-${event.id}"></div>
@@ -183,16 +199,18 @@
         const el = document.getElementById('timer-' + event.id);
         const tm = document.getElementById('time-' + event.id);
         const sch = document.getElementById('schedule-' + event.id);
+        const dur = document.getElementById('duration-' + event.id);
 
-        // Format times for display (local event time zone)
         function fmt(dt) {
           return pad(dt.getHours()) + ":" + pad(dt.getMinutes());
         }
         sch.innerHTML =
           `<b>Start:</b> ${fmt(localStart)} &nbsp; <b>End:</b> ${fmt(localEnd)} (${event.tz.replace('_',' ')})`;
 
+        // Duration
+        dur.textContent = `Duration: ${getDurationText(event.duration.hours, event.duration.minutes)}`;
+
         if (isActive) {
-          // Show "Event Active: Ends in X"
           let diff = Math.floor((utcEnd - now) / 1000);
           const d = Math.floor(diff / 86400);
           const h = Math.floor((diff % 86400) / 3600);
@@ -201,7 +219,6 @@
           el.innerHTML = `<span class="active">Event Active! Ends in: ${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s</span>`;
           tm.textContent = `(Ends at: ${localEnd.toLocaleString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: event.tz})} ${event.tz.replace('_',' ')})`;
         } else {
-          // Countdown to next start
           let diff = Math.floor((utcStart - now) / 1000);
           if (diff < 0) diff = 0;
           const d = Math.floor(diff / 86400);
@@ -218,5 +235,7 @@
     updateTimers();
     setInterval(updateTimers, 1000);
   </script>
+</body>
+</html>
 </body>
 </html>
