@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Crystal of Atlan - Live Event Countdown Timers (All Times UTC)</title>
+  <title>Crystal of Atlan - Live Event Countdown Timers (All Times GMT)</title>
   <style>
     body { background: #232a34; color: #fff; font-family: Arial, sans-serif; margin: 0; min-height: 100vh; }
     h1 { text-align: center; margin-top: 36px; margin-bottom: 32px; font-size: 2.2em; font-weight: 700; }
@@ -20,7 +20,7 @@
   </style>
 </head>
 <body>
-  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times UTC)</h1>
+  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT)</h1>
   <div class="events-grid" id="events"></div>
   <script>
     function pad(n){return n.toString().padStart(2,'0');}
@@ -31,7 +31,7 @@
       return result.length ? result.join(" ") : "Instant";
     }
 
-    // All times are in UTC
+    // All times are in GMT (identical to UTC for display purposes)
     const events = [
       {
         id: 'ancient_battlefield_1',
@@ -127,13 +127,12 @@
       {
         id: 'arena_reset',
         summary: 'Arena Reset',
-        desc: 'Every other Monday at 06:00 UTC',
+        desc: 'Every other Monday at 06:00 GMT',
         startHour: 6, startMinute: 0,
         endHour: 6, endMinute: 1,
         duration: { hours: 0, minutes: 1 },
         // Every other Monday: week number is even
-        customNext: function(nowUTC) {
-          // Find next Monday at 06:00 UTC that is an even ISO week
+        customNext: function(nowGMT) {
           function getISOWeek(date) {
             const tmp = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
             const dayNum = tmp.getUTCDay() || 7;
@@ -141,31 +140,28 @@
             const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
             return Math.ceil((((tmp - yearStart)/86400000) + 1)/7);
           }
-          let d = new Date(nowUTC);
+          let d = new Date(nowGMT);
           d.setUTCSeconds(0,0);
           let day = d.getUTCDay();
           let daysUntilMonday = (1 - day + 7) % 7;
           let nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysUntilMonday, 6, 0, 0, 0));
-          // If today is Monday and before 06:00, keep this Monday
           if (day === 1 && (d.getUTCHours() < 6)) {
             nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 0, 0, 0));
           }
-          // If today is Monday and after 06:00, go to next Monday
           else if (day === 1 && (d.getUTCHours() >= 6)) {
             nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 7, 6, 0, 0, 0));
           }
-          // Loop until we find an even ISO week
           while (getISOWeek(nextMonday) % 2 !== 0) {
             nextMonday.setUTCDate(nextMonday.getUTCDate() + 7);
           }
-          let nextEnd = new Date(nextMonday.getTime() + 60000); // 1 min reset
-          return {utcStart: nextMonday, utcEnd: nextEnd, isActive: (nowUTC >= nextMonday && nowUTC < nextEnd), localStart: nextMonday, localEnd: nextEnd};
+          let nextEnd = new Date(nextMonday.getTime() + 60000);
+          return {utcStart: nextMonday, utcEnd: nextEnd, isActive: (nowGMT >= nextMonday && nowGMT < nextEnd), localStart: nextMonday, localEnd: nextEnd};
         }
       },
       {
         id: 'hexchess_rewards_reset',
         summary: 'Hexchess Rewards Reset',
-        desc: 'Every Monday at 06:00 UTC',
+        desc: 'Every Monday at 06:00 GMT',
         startHour: 6, startMinute: 0,
         endHour: 6, endMinute: 1,
         days: [1],
@@ -174,7 +170,7 @@
       {
         id: 'energy_replenishment_reset',
         summary: 'Energy Replenishment Daily Reset',
-        desc: 'Resets daily at 06:00 UTC',
+        desc: 'Resets daily at 06:00 GMT',
         startHour: 6, startMinute: 0,
         endHour: 6, endMinute: 1,
         days: [0,1,2,3,4,5,6],
@@ -183,7 +179,7 @@
       {
         id: 'tempered_trials_reset',
         summary: 'Tempered Trials Daily Reset',
-        desc: 'Resets daily at 06:00 UTC',
+        desc: 'Resets daily at 06:00 GMT',
         startHour: 6, startMinute: 0,
         endHour: 6, endMinute: 1,
         days: [0,1,2,3,4,5,6],
@@ -191,15 +187,15 @@
       }
     ];
 
-    function getNextEventTimes(event, nowUTC) {
+    function getNextEventTimes(event, nowGMT) {
       if (event.customNext) {
-        return event.customNext(nowUTC);
+        return event.customNext(nowGMT);
       }
       let {startHour, startMinute, endHour, endMinute, days} = event;
-      let localDay = nowUTC.getUTCDay();
-      let localYear = nowUTC.getUTCFullYear();
-      let localMonth = nowUTC.getUTCMonth();
-      let localDate = nowUTC.getUTCDate();
+      let localDay = nowGMT.getUTCDay();
+      let localYear = nowGMT.getUTCFullYear();
+      let localMonth = nowGMT.getUTCMonth();
+      let localDate = nowGMT.getUTCDate();
 
       let eventDays = days || [0,1,2,3,4,5,6];
 
@@ -208,10 +204,9 @@
         let d = (localDay + i) % 7;
         if (eventDays.includes(d)) {
           let candidateStart = new Date(Date.UTC(localYear, localMonth, localDate + i, startHour, startMinute, 0, 0));
-          if (i === 0 && (nowUTC.getUTCHours() > startHour || (nowUTC.getUTCHours() === startHour && nowUTC.getUTCMinutes() >= startMinute))) continue;
+          if (i === 0 && (nowGMT.getUTCHours() > startHour || (nowGMT.getUTCHours() === startHour && nowGMT.getUTCMinutes() >= startMinute))) continue;
           nextStart = candidateStart;
           nextEnd = new Date(Date.UTC(localYear, localMonth, localDate + i, endHour, endMinute, 0, 0));
-          // If event ends on or before it starts, it's next day!
           if (
             endHour < startHour ||
             (endHour === startHour && endMinute <= startMinute)
@@ -223,7 +218,6 @@
       }
       let currentStart = new Date(Date.UTC(localYear, localMonth, localDate, startHour, startMinute, 0, 0));
       let currentEnd = new Date(Date.UTC(localYear, localMonth, localDate, endHour, endMinute, 0, 0));
-      // If event ends on or before it starts, it's next day!
       if (
         endHour < startHour ||
         (endHour === startHour && endMinute <= startMinute)
@@ -231,7 +225,7 @@
         currentEnd.setUTCDate(currentEnd.getUTCDate() + 1);
       }
       let isActive = eventDays.includes(localDay) &&
-        nowUTC >= currentStart && nowUTC < currentEnd;
+        nowGMT >= currentStart && nowGMT < currentEnd;
       if (isActive) {
         nextStart = currentStart;
         nextEnd = currentEnd;
@@ -270,7 +264,7 @@
           return pad(dt.getUTCHours()) + ":" + pad(dt.getUTCMinutes());
         }
         sch.innerHTML =
-          `<b>Start:</b> ${fmt(localStart)} &nbsp; <b>End:</b> ${fmt(localEnd)} UTC`;
+          `<b>Start:</b> ${fmt(localStart)} &nbsp; <b>End:</b> ${fmt(localEnd)} GMT`;
 
         dur.textContent = `Duration: ${getDurationText(event.duration.hours, event.duration.minutes)}`;
 
@@ -281,7 +275,7 @@
           const m = Math.floor((diff % 3600) / 60);
           const s = diff % 60;
           el.innerHTML = `<span class="active">Event Active! Ends in: ${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s</span>`;
-          tm.textContent = `(Ends at: ${fmt(localEnd)} UTC)`;
+          tm.textContent = `(Ends at: ${fmt(localEnd)} GMT)`;
         } else {
           let diff = Math.floor((utcStart - now) / 1000);
           if (diff < 0) diff = 0;
@@ -290,7 +284,7 @@
           const m = Math.floor((diff % 3600) / 60);
           const s = diff % 60;
           el.innerHTML = `<span class="inactive">Starts in: ${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s</span>`;
-          tm.textContent = `(Starts at: ${fmt(localStart)} UTC)`;
+          tm.textContent = `(Starts at: ${fmt(localStart)} GMT)`;
         }
       });
     }
