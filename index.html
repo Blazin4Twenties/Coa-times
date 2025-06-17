@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Crystal of Atlan - Live Event Countdown Timers (GMT-4 Eastern Time)</title>
+  <title>Crystal of Atlan - Live Event Countdown Timers (GMT-5 Eastern Time US & Canada)</title>
   <style>
     body { background: #232a34; color: #fff; font-family: Arial, sans-serif; margin: 0; min-height: 100vh; }
     h1 { text-align: center; margin-top: 36px; margin-bottom: 32px; font-size: 2.2em; font-weight: 700; }
@@ -20,11 +20,11 @@
   </style>
 </head>
 <body>
-  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT-4/Eastern)</h1>
+  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT-5/Eastern)</h1>
   <div class="events-grid" id="events"></div>
   <script>
-    // Eastern Time (Daylight savings aware, so matches -4 currently)
-    const tz = "America/New_York";
+    // Use fixed UTC-5 offset, not daylight savings
+    const tz = 'Etc/GMT+5'; // GMT-5 (Eastern Time US & Canada, standard/winter, NO daylight savings)
 
     function pad(n){return n.toString().padStart(2,'0');}
     function getDurationText(h, m) {
@@ -34,6 +34,7 @@
       return result.length ? result.join(" ") : "Instant";
     }
 
+    // All events from your previous list/calendar image, using GMT-5
     const events = [
       // All-day events
       {
@@ -242,8 +243,8 @@
       }
       let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
       let nowDay = localNow.getDay();
-      let [sH,sM] = event.startTime.split(':').map(Number);
-      let [eH,eM] = event.endTime.split(':').map(Number);
+      let [sH, sM] = event.startTime.split(':').map(Number);
+      let [eH, eM] = event.endTime.split(':').map(Number);
 
       let nextStart = null, nextEnd = null;
       for (let i=0; i<14; ++i) {
@@ -280,7 +281,7 @@
         nextEnd = localEnd;
       }
 
-      // For duration, always compute from start to end in local time
+      // Duration is always the local time difference
       let durationMin = ((nextEnd - nextStart) / 60000);
       let durationH = Math.floor(durationMin/60);
       let durationM = durationMin%60;
@@ -323,7 +324,7 @@
         const sch = document.getElementById('schedule-' + event.id);
         const dur = document.getElementById('duration-' + event.id);
 
-        sch.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-4`;
+        sch.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-5`;
         dur.textContent = `Duration: ${getDurationText(durationH, durationM)}`;
 
         if (isActive) {
@@ -333,7 +334,7 @@
           const mins = Math.floor((diff % 3600) / 60);
           const secs = diff % 60;
           el.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
-          tm.textContent = `(Ends at: ${fmtTime(localEnd)} GMT-4)`;
+          tm.textContent = `(Ends at: ${fmtTime(localEnd)} GMT-5)`;
         } else if (utcStart && utcStart > now) {
           let diff = Math.floor((utcStart - now) / 1000);
           const days = Math.floor(diff / 86400);
@@ -341,7 +342,7 @@
           const mins = Math.floor((diff % 3600) / 60);
           const secs = diff % 60;
           el.innerHTML = `<span class="inactive">Starts in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
-          tm.textContent = `(Starts at: ${fmtTime(localStart)} GMT-4)`;
+          tm.textContent = `(Starts at: ${fmtTime(localStart)} GMT-5)`;
         } else {
           el.innerHTML = `<span class="inactive">Not active</span>`;
           tm.textContent = '';
