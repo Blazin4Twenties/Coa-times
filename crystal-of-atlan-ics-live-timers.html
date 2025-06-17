@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Crystal of Atlan - Live ICS Event Timers</title>
+  <style>
+    body { background: #181e29; color: #fff; font-family: Arial, sans-serif; }
+    h1 { text-align: center; }
+    .events-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 32px; margin-top: 24px; }
+    .event-card {
+      background: #22293a;
+      border-radius: 20px;
+      box-shadow: 0 3px 12px #000a;
+      padding: 24px 24px 16px 24px;
+      min-width: 320px;
+      max-width: 400px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .event-title { font-weight: bold; font-size: 1.3em; margin: 10px 0 4px 0; }
+    .event-description { font-size: 1em; color: #cfcfcf; margin: 5px 0 10px 0; }
+    .timer { font-size: 1.25em; font-family: monospace; margin: 6px 0 14px 0; color: #ffea00; }
+    .event-time { font-size: 1em; color: #a8e1f7; }
+    @media (max-width: 1100px) {
+      .events-container { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Crystal of Atlan - Live Event Countdown Timers</h1>
+  <div class="events-container" id="events"></div>
+  <script>
+    // ---- Define recurring event rules (from your ICS above) ----
+    // All event times are in America/New_York or UTC as noted.
+
+    const events = [
+      {
+        id: 'ancient_battlefield_1',
+        summary: 'Ancient Battlefield 1',
+        desc: 'Matchmaking available daily at 12:30 (UTC-4)',
+        // daily at 12:30 America/New_York
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 12, 30, [0,1,2,3,4,5,6], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'ancient_battlefield_2',
+        summary: 'Ancient Battlefield 2',
+        desc: 'Matchmaking available daily at 20:00 (UTC-4)',
+        // daily at 20:00 America/New_York
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 20, 0, [0,1,2,3,4,5,6], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'mine_wars_1',
+        summary: 'Mine Wars 1',
+        desc: 'Opens daily at 12:00 (UTC-4)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 12, 0, [0,1,2,3,4,5,6], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'mine_wars_2',
+        summary: 'Mine Wars 2',
+        desc: 'Opens daily at 21:00 (UTC-4)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 21, 0, [0,1,2,3,4,5,6], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'spirit_frenzy_weekday',
+        summary: 'Spirit Frenzy (Weekday)',
+        desc: 'Opens Mon-Fri at 20:00 (UTC-4)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 20, 0, [1,2,3,4,5], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'spirit_frenzy_weekend',
+        summary: 'Spirit Frenzy (Weekend)',
+        desc: 'Opens Sat & Sun at 20:00 (UTC-4)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 20, 0, [0,6], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'joint_siege_friday',
+        summary: 'Joint Siege (Friday)',
+        desc: 'Starts Friday at 20:30 (UTC-4)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 20, 30, [5], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'joint_siege_sunday',
+        summary: 'Joint Siege (Sunday)',
+        desc: 'Starts Sunday at 20:30 (UTC-4)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 20, 30, [0], 'America/New_York');
+          return event;
+        }
+      },
+      {
+        id: 'arena_early',
+        summary: 'Arena (Crystal Arena) Early',
+        desc: 'Open daily 12:00–14:00 (UTC+8)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 12, 0, [0,1,2,3,4,5,6], 'Asia/Shanghai');
+          return event;
+        }
+      },
+      {
+        id: 'arena_late',
+        summary: 'Arena (Crystal Arena) Late',
+        desc: 'Open daily 19:00–22:00 (UTC+8)',
+        getNext: function(now) {
+          let event = getNextWeeklyEvent(now, 19, 0, [0,1,2,3,4,5,6], 'Asia/Shanghai');
+          return event;
+        }
+      }
+    ];
+
+    // ---- Timezone helpers ----
+    // Converts a Date to another timezone (returns a new Date object)
+    function toTimeZone(date, tzString) {
+      // Use toLocaleString to get the time in the right zone, then convert back to Date
+      let str = date.toLocaleString('en-US', { timeZone: tzString });
+      return new Date(str);
+    }
+
+    // Returns the next occurrence of a weekly event at hh:mm local time, on day(s) of week, in the given tz
+    function getNextWeeklyEvent(nowUTC, hh, mm, daysOfWeek, tz) {
+      let localNow = toTimeZone(nowUTC, tz);
+      let localDay = localNow.getDay();
+      let localYear = localNow.getFullYear();
+      let localMonth = localNow.getMonth();
+      let localDate = localNow.getDate();
+
+      // Find next valid day
+      let soonest = null;
+      for (let i = 0; i <= 7; ++i) {
+        let d = (localDay + i) % 7;
+        if (daysOfWeek.includes(d)) {
+          let eventLocal = new Date(localYear, localMonth, localDate + i, hh, mm, 0, 0);
+          // If today, make sure it's in the future
+          if (i === 0 && (localNow.getHours() > hh || (localNow.getHours() === hh && localNow.getMinutes() >= mm))) {
+            continue;
+          }
+          soonest = eventLocal;
+          break;
+        }
+      }
+      // fallback: if not found, use next occurrence
+      if (!soonest) {
+        let add = (daysOfWeek[0] - localDay + 7) % 7;
+        soonest = new Date(localYear, localMonth, localDate + add, hh, mm, 0, 0);
+      }
+      // Convert back to UTC
+      // Get the timestamp of soonest in tz, then create a Date object in UTC with that timestamp
+      let offsetLocal = soonest.getTime() - toTimeZone(soonest, 'UTC').getTime();
+      let utcTs = soonest.getTime() - offsetLocal;
+      return new Date(utcTs);
+    }
+
+    // ---- Render and update timers ----
+    function renderEvents() {
+      const container = document.getElementById('events');
+      container.innerHTML = '';
+      events.forEach(event => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
+        card.innerHTML = `
+          <div class="event-title">${event.summary}</div>
+          <div class="event-description">${event.desc}</div>
+          <div class="timer" id="timer-${event.id}"></div>
+          <div class="event-time" id="time-${event.id}"></div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function updateTimers() {
+      const now = new Date();
+      events.forEach(event => {
+        const next = event.getNext(now);
+        let diff = Math.floor((next - now) / 1000);
+        if (diff < 0) diff = 0;
+        const days = Math.floor(diff / 86400);
+        const hours = Math.floor((diff % 86400) / 3600);
+        const mins = Math.floor((diff % 3600) / 60);
+        const secs = diff % 60;
+        const timestr = `${days}d ${hours.toString().padStart(2,'0')}h ${mins.toString().padStart(2,'0')}m ${secs.toString().padStart(2,'0')}s`;
+        const el = document.getElementById('timer-' + event.id);
+        if (el) el.textContent = diff > 0 ? timestr : "Event started!";
+        const tm = document.getElementById('time-' + event.id);
+        if (tm) tm.textContent = '(Next: ' + next.toLocaleString() + ' UTC)';
+      });
+    }
+
+    renderEvents();
+    updateTimers();
+    setInterval(updateTimers, 1000);
+  </script>
+</body>
+</html>
