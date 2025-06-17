@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Crystal of Atlan - Live Event Countdown Timers</title>
+  <title>Crystal of Atlan - Live Event Countdown Timers (All Times UTC)</title>
   <style>
     body { background: #232a34; color: #fff; font-family: Arial, sans-serif; margin: 0; min-height: 100vh; }
     h1 { text-align: center; margin-top: 36px; margin-bottom: 32px; font-size: 2.2em; font-weight: 700; }
@@ -31,14 +31,14 @@
       return result.length ? result.join(" ") : "Instant";
     }
 
-    // All times below are in UTC
+    // All times are in UTC
     const events = [
       {
         id: 'ancient_battlefield_1',
         summary: 'Ancient Battlefield 1',
         desc: 'Matchmaking available daily',
-        startHour: 16, startMinute: 30, // 12:30 EDT = 16:30 UTC
-        endHour: 18, endMinute: 0,      // 14:00 EDT = 18:00 UTC
+        startHour: 16, startMinute: 30,
+        endHour: 18, endMinute: 0,
         days: [0,1,2,3,4,5,6],
         duration: { hours: 1, minutes: 30 }
       },
@@ -46,8 +46,8 @@
         id: 'ancient_battlefield_2',
         summary: 'Ancient Battlefield 2',
         desc: 'Matchmaking available daily',
-        startHour: 0, startMinute: 0,   // 20:00 EDT = 00:00 UTC (next day)
-        endHour: 2, endMinute: 0,       // 22:00 EDT = 02:00 UTC (next day)
+        startHour: 0, startMinute: 0,
+        endHour: 2, endMinute: 0,
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -55,8 +55,8 @@
         id: 'mine_wars_1',
         summary: 'Mine Wars 1',
         desc: 'Opens daily',
-        startHour: 16, startMinute: 0,  // 12:00 EDT = 16:00 UTC
-        endHour: 18, endMinute: 0,      // 14:00 EDT = 18:00 UTC
+        startHour: 16, startMinute: 0,
+        endHour: 18, endMinute: 0,
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -64,8 +64,8 @@
         id: 'mine_wars_2',
         summary: 'Mine Wars 2',
         desc: 'Opens daily',
-        startHour: 1, startMinute: 0,   // 21:00 EDT = 01:00 UTC (next day)
-        endHour: 3, endMinute: 0,       // 23:00 EDT = 03:00 UTC (next day)
+        startHour: 1, startMinute: 0,
+        endHour: 3, endMinute: 0,
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -73,8 +73,8 @@
         id: 'spirit_frenzy_weekday',
         summary: 'Spirit Frenzy (Weekday)',
         desc: 'Opens Mon-Fri',
-        startHour: 0, startMinute: 0,   // 20:00 EDT = 00:00 UTC (next day)
-        endHour: 0, endMinute: 15,      // 20:15 EDT = 00:15 UTC (next day)
+        startHour: 0, startMinute: 0,
+        endHour: 0, endMinute: 15,
         days: [1,2,3,4,5],
         duration: { hours: 0, minutes: 15 }
       },
@@ -82,8 +82,8 @@
         id: 'spirit_frenzy_weekend',
         summary: 'Spirit Frenzy (Weekend)',
         desc: 'Opens Sat & Sun',
-        startHour: 0, startMinute: 0,   // 20:00 EDT = 00:00 UTC (next day)
-        endHour: 0, endMinute: 15,      // 20:15 EDT = 00:15 UTC (next day)
+        startHour: 0, startMinute: 0,
+        endHour: 0, endMinute: 15,
         days: [0,6],
         duration: { hours: 0, minutes: 15 }
       },
@@ -91,8 +91,8 @@
         id: 'joint_siege_friday',
         summary: 'Joint Siege (Friday)',
         desc: 'Starts Friday',
-        startHour: 0, startMinute: 30,  // 20:30 EDT = 00:30 UTC (next day)
-        endHour: 1, endMinute: 0,       // 21:00 EDT = 01:00 UTC (next day)
+        startHour: 0, startMinute: 30,
+        endHour: 1, endMinute: 0,
         days: [5],
         duration: { hours: 0, minutes: 30 }
       },
@@ -100,8 +100,8 @@
         id: 'joint_siege_sunday',
         summary: 'Joint Siege (Sunday)',
         desc: 'Starts Sunday',
-        startHour: 0, startMinute: 30,  // 20:30 EDT = 00:30 UTC (next day)
-        endHour: 1, endMinute: 0,       // 21:00 EDT = 01:00 UTC (next day)
+        startHour: 0, startMinute: 30,
+        endHour: 1, endMinute: 0,
         days: [0],
         duration: { hours: 0, minutes: 30 }
       },
@@ -109,8 +109,8 @@
         id: 'arena_early',
         summary: 'Arena (Crystal Arena) Early',
         desc: 'Open daily',
-        startHour: 4, startMinute: 0,   // 12:00 CST (UTC+8) = 04:00 UTC
-        endHour: 6, endMinute: 0,       // 14:00 CST (UTC+8) = 06:00 UTC
+        startHour: 4, startMinute: 0,
+        endHour: 6, endMinute: 0,
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -118,15 +118,84 @@
         id: 'arena_late',
         summary: 'Arena (Crystal Arena) Late',
         desc: 'Open daily',
-        startHour: 11, startMinute: 0,  // 19:00 CST (UTC+8) = 11:00 UTC
-        endHour: 14, endMinute: 0,      // 22:00 CST (UTC+8) = 14:00 UTC
+        startHour: 11, startMinute: 0,
+        endHour: 14, endMinute: 0,
         days: [0,1,2,3,4,5,6],
         duration: { hours: 3, minutes: 0 }
+      },
+      // --- NEW RESET EVENTS BELOW ---
+      {
+        id: 'arena_reset',
+        summary: 'Arena Reset',
+        desc: 'Every other Monday at 06:00 UTC',
+        startHour: 6, startMinute: 0,
+        endHour: 6, endMinute: 1,
+        duration: { hours: 0, minutes: 1 },
+        // Every other Monday: week number is even
+        customNext: function(nowUTC) {
+          // Find next Monday at 06:00 UTC that is an even ISO week
+          function getISOWeek(date) {
+            const tmp = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+            const dayNum = tmp.getUTCDay() || 7;
+            tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
+            return Math.ceil((((tmp - yearStart)/86400000) + 1)/7);
+          }
+          let d = new Date(nowUTC);
+          d.setUTCSeconds(0,0);
+          let day = d.getUTCDay();
+          let daysUntilMonday = (1 - day + 7) % 7;
+          let nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysUntilMonday, 6, 0, 0, 0));
+          // If today is Monday and before 06:00, keep this Monday
+          if (day === 1 && (d.getUTCHours() < 6)) {
+            nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 0, 0, 0));
+          }
+          // If today is Monday and after 06:00, go to next Monday
+          else if (day === 1 && (d.getUTCHours() >= 6)) {
+            nextMonday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 7, 6, 0, 0, 0));
+          }
+          // Loop until we find an even ISO week
+          while (getISOWeek(nextMonday) % 2 !== 0) {
+            nextMonday.setUTCDate(nextMonday.getUTCDate() + 7);
+          }
+          let nextEnd = new Date(nextMonday.getTime() + 60000); // 1 min reset
+          return {utcStart: nextMonday, utcEnd: nextEnd, isActive: (nowUTC >= nextMonday && nowUTC < nextEnd), localStart: nextMonday, localEnd: nextEnd};
+        }
+      },
+      {
+        id: 'hexchess_rewards_reset',
+        summary: 'Hexchess Rewards Reset',
+        desc: 'Every Monday at 06:00 UTC',
+        startHour: 6, startMinute: 0,
+        endHour: 6, endMinute: 1,
+        days: [1],
+        duration: { hours: 0, minutes: 1 }
+      },
+      {
+        id: 'energy_replenishment_reset',
+        summary: 'Energy Replenishment Daily Reset',
+        desc: 'Resets daily at 06:00 UTC',
+        startHour: 6, startMinute: 0,
+        endHour: 6, endMinute: 1,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 0, minutes: 1 }
+      },
+      {
+        id: 'tempered_trials_reset',
+        summary: 'Tempered Trials Daily Reset',
+        desc: 'Resets daily at 06:00 UTC',
+        startHour: 6, startMinute: 0,
+        endHour: 6, endMinute: 1,
+        days: [0,1,2,3,4,5,6],
+        duration: { hours: 0, minutes: 1 }
       }
     ];
 
-    // Find next event start/end in UTC
-    function getNextEventTimes({startHour, startMinute, endHour, endMinute, days}, nowUTC) {
+    function getNextEventTimes(event, nowUTC) {
+      if (event.customNext) {
+        return event.customNext(nowUTC);
+      }
+      let {startHour, startMinute, endHour, endMinute, days} = event;
       let localDay = nowUTC.getUTCDay();
       let localYear = nowUTC.getUTCFullYear();
       let localMonth = nowUTC.getUTCMonth();
@@ -142,11 +211,25 @@
           if (i === 0 && (nowUTC.getUTCHours() > startHour || (nowUTC.getUTCHours() === startHour && nowUTC.getUTCMinutes() >= startMinute))) continue;
           nextStart = candidateStart;
           nextEnd = new Date(Date.UTC(localYear, localMonth, localDate + i, endHour, endMinute, 0, 0));
+          // If event ends on or before it starts, it's next day!
+          if (
+            endHour < startHour ||
+            (endHour === startHour && endMinute <= startMinute)
+          ) {
+            nextEnd.setUTCDate(nextEnd.getUTCDate() + 1);
+          }
           break;
         }
       }
       let currentStart = new Date(Date.UTC(localYear, localMonth, localDate, startHour, startMinute, 0, 0));
       let currentEnd = new Date(Date.UTC(localYear, localMonth, localDate, endHour, endMinute, 0, 0));
+      // If event ends on or before it starts, it's next day!
+      if (
+        endHour < startHour ||
+        (endHour === startHour && endMinute <= startMinute)
+      ) {
+        currentEnd.setUTCDate(currentEnd.getUTCDate() + 1);
+      }
       let isActive = eventDays.includes(localDay) &&
         nowUTC >= currentStart && nowUTC < currentEnd;
       if (isActive) {
