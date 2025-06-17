@@ -34,14 +34,14 @@
     .active { color: #90ee90; }
     .inactive { color: #ffe066; }
     .warning { color: #ffe066; }
-    .status-table { margin: 22px auto 32px auto; border-collapse: collapse; background: #222; color: #fff; }
+    .status-table { margin: 22px auto 12px auto; border-collapse: collapse; background: #222; color: #fff; }
     .status-table th, .status-table td { padding: 8px 18px; border: 1px solid #444; font-size: 1.08em;}
     .status-table th { background: #232a34; }
     .status-table td.status-col { font-weight: bold; }
     .status-green { background: #1e4021; color: #aaffaa; }
     .status-yellow { background: #3a390c; color: #ffe066; }
     .status-blue { background: #1e3040; color: #4db3ff; }
-    .timezone-select-container { text-align: center; margin: 34px 0 30px 0; }
+    .timezone-select-container { text-align: center; margin: 0 0 18px 0; }
     .timezone-select { font-size: 1.1em; border-radius: 6px; padding: 6px 14px; background: #232a34; color: #ffe066; border: 1px solid #ffe066; }
     label[for="timezone-select"] { color: #ffe066; font-size: 1.09em; margin-right: 7px; font-weight: bold; }
     @media (max-width: 1100px) { .events-grid { flex-direction: column; align-items: center; } .event-card { min-width: 250px; max-width: 90vw; } }
@@ -49,6 +49,21 @@
 </head>
 <body>
   <h1>Crystal of Atlan - Live Event Countdown Timers (<span id="current-tz-label">All Times GMT-4/Eastern</span>)</h1>
+  <div class="timezone-select-container">
+    <label for="timezone-select">Select Timezone:</label>
+    <select id="timezone-select" class="timezone-select">
+      <option value="America/New_York" selected>GMT-4 Eastern (US/Canada)</option>
+      <option value="America/Chicago">GMT-5 Central (US/Canada)</option>
+      <option value="America/Denver">GMT-6 Mountain (US/Canada)</option>
+      <option value="America/Los_Angeles">GMT-7 Pacific (US/Canada)</option>
+      <option value="UTC">UTC (Coordinated Universal Time)</option>
+      <option value="Europe/London">GMT+1 London (UK)</option>
+      <option value="Europe/Paris">GMT+2 Paris (France)</option>
+      <option value="Asia/Tokyo">GMT+9 Tokyo (Japan)</option>
+      <option value="Australia/Sydney">GMT+10 Sydney (Australia)</option>
+      <option value="Asia/Kolkata">GMT+5:30 India (IST)</option>
+    </select>
+  </div>
   <table class="status-table">
     <tr>
       <th>Card Color</th>
@@ -72,21 +87,6 @@
     </tr>
   </table>
   <div class="events-grid" id="events"></div>
-  <div class="timezone-select-container">
-    <label for="timezone-select">Select Timezone:</label>
-    <select id="timezone-select" class="timezone-select">
-      <option value="America/New_York" selected>GMT-4 Eastern (US/Canada)</option>
-      <option value="America/Chicago">GMT-5 Central (US/Canada)</option>
-      <option value="America/Denver">GMT-6 Mountain (US/Canada)</option>
-      <option value="America/Los_Angeles">GMT-7 Pacific (US/Canada)</option>
-      <option value="UTC">UTC (Coordinated Universal Time)</option>
-      <option value="Europe/London">GMT+1 London (UK)</option>
-      <option value="Europe/Paris">GMT+2 Paris (France)</option>
-      <option value="Asia/Tokyo">GMT+9 Tokyo (Japan)</option>
-      <option value="Australia/Sydney">GMT+10 Sydney (Australia)</option>
-      <option value="Asia/Kolkata">GMT+5:30 India (IST)</option>
-    </select>
-  </div>
   <script>
     // Default timezone is Eastern US/Canada
     let tz = 'America/New_York';
