@@ -23,8 +23,8 @@
   <h1>Crystal of Atlan - Live Event Countdown Timers (All Times GMT-5/Eastern)</h1>
   <div class="events-grid" id="events"></div>
   <script>
-    // Use fixed UTC-5 offset, not daylight savings
-    const tz = 'Etc/GMT+5'; // GMT-5 (Eastern Time US & Canada, no DST)
+    // Use fixed UTC-5 offset (no DST)
+    const tz = 'Etc/GMT+5'; // GMT-5
 
     function pad(n){return n.toString().padStart(2,'0');}
     function getDurationText(h, m) {
@@ -34,8 +34,18 @@
       return result.length ? result.join(" ") : "Instant";
     }
 
-    // All events from your calendar image, using GMT-5
+    // Event list (add dates for unique/special events as "eventDate": "YYYY-MM-DD")
     const events = [
+      // Example of dated event
+      // {
+      //   id: 'special_event',
+      //   summary: 'Special Event',
+      //   desc: 'One-time event',
+      //   startTime: '15:00',
+      //   endTime: '17:00',
+      //   eventDate: '2025-06-25', // YYYY-MM-DD string for fixed date events
+      //   recurring: false
+      // },
       // All-day events (00:00-00:00, duration 24h)
       {
         id: 'ranked_match_season',
@@ -140,6 +150,9 @@
           let durationH = Math.floor(durationMin/60);
           let durationM = durationMin%60;
           return {
+            nextStart: nextMonday,
+            nextEnd: nextEnd,
+            isActive: (localNow >= nextMonday && localNow < nextEnd),
             durationH, durationM
           };
         }
@@ -241,10 +254,6 @@
       return { h, m, mins: durMins };
     }
 
-    function fmtTime(dt) {
-      return dt.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz});
-    }
-
     function renderEvents() {
       const container = document.getElementById('events');
       container.innerHTML = '';
@@ -265,7 +274,45 @@
     function updateTimers() {
       const now = new Date();
       events.forEach(event => {
-        // Always just show simple duration countdown from start to end time in UTC-5
+        // For events with a specific date
+        if (event.eventDate) {
+          let [sH, sM] = event.startTime.split(':').map(Number);
+          let [eH, eM] = event.endTime.split(':').map(Number);
+          let start = new Date(`${event.eventDate}T${pad(sH)}:${pad(sM)}:00-05:00`);
+          let end = new Date(`${event.eventDate}T${pad(eH)}:${pad(eM)}:00-05:00`);
+          if (eH < sH || (eH === sH && eM <= sM)) {
+            end.setDate(end.getDate() + 1);
+          }
+          let duration = calcDuration(event.startTime, event.endTime);
+          let active = now >= start && now < end;
+          let timerEl = document.getElementById('timer-' + event.id);
+          let durEl = document.getElementById('duration-' + event.id);
+          let schEl = document.getElementById('schedule-' + event.id);
+
+          durEl.textContent = `Duration: ${getDurationText(duration.h, duration.m)}`;
+          schEl.innerHTML = `<b>Start:</b> ${event.startTime} &nbsp; <b>End:</b> ${event.endTime} GMT-5 on ${event.eventDate}`;
+          let secsLeft;
+          if (active) {
+            secsLeft = Math.max(0, Math.floor((end - now) / 1000));
+            const days = Math.floor(secsLeft / 86400);
+            const hours = Math.floor((secsLeft % 86400) / 3600);
+            const mins = Math.floor((secsLeft % 3600) / 60);
+            const secs = secsLeft % 60;
+            timerEl.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
+          } else if (now < start) {
+            secsLeft = Math.floor((start - now) / 1000);
+            const days = Math.floor(secsLeft / 86400);
+            const hours = Math.floor((secsLeft % 86400) / 3600);
+            const mins = Math.floor((secsLeft % 3600) / 60);
+            const secs = secsLeft % 60;
+            timerEl.innerHTML = `<span class="inactive">Starts in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
+          } else {
+            timerEl.innerHTML = `<span class="inactive">Event finished</span>`;
+          }
+          return;
+        }
+
+        // Recurring events
         let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
         let nowDay = localNow.getDay();
         let [sH, sM] = event.startTime.split(':').map(Number);
@@ -273,6 +320,7 @@
 
         // Find next occurrence window in local time
         let localStart = null, localEnd = null;
+        let foundNext = false;
         for (let i=0; i<14; ++i) {
           let day = (nowDay + i) % 7;
           if (event.recurDaysArr && !event.recurDaysArr.includes(day)) continue;
@@ -288,9 +336,10 @@
           if (eH < sH || (eH === sH && eM <= sM)) {
             localEnd.setDate(localEnd.getDate() + 1);
           }
+          foundNext = true;
           break;
         }
-        // If currently in this event window, set start/end to today
+        // If currently active, set start/end to today
         let active = false;
         let currStart = new Date(localNow); currStart.setHours(sH, sM, 0, 0);
         let currEnd = new Date(localNow); currEnd.setHours(eH, eM, 0, 0);
@@ -299,9 +348,18 @@
           active = true;
           localStart = currStart;
           localEnd = currEnd;
+          foundNext = true;
         }
 
-        // Timer logic: If active, show time left from start to end, else show full duration
+        // Arena reset (every other Monday) custom
+        if (event.customNext) {
+          let result = event.customNext(now);
+          localStart = result.nextStart;
+          localEnd = result.nextEnd;
+          active = result.isActive;
+        }
+
+        // Timer logic: If active, countdown to end; if not active, countdown to next start
         const timerEl = document.getElementById('timer-' + event.id);
         const durEl = document.getElementById('duration-' + event.id);
         const schEl = document.getElementById('schedule-' + event.id);
@@ -313,19 +371,20 @@
         let secsLeft;
         if (active) {
           secsLeft = Math.max(0, Math.floor((localEnd - localNow) / 1000));
-        } else {
-          // Not active: timer shows the full duration for the event (as a simple countdown)
-          secsLeft = duration.mins * 60;
-        }
-        const days = Math.floor(secsLeft / 86400);
-        const hours = Math.floor((secsLeft % 86400) / 3600);
-        const mins = Math.floor((secsLeft % 3600) / 60);
-        const secs = secsLeft % 60;
-
-        if (active) {
+          const days = Math.floor(secsLeft / 86400);
+          const hours = Math.floor((secsLeft % 86400) / 3600);
+          const mins = Math.floor((secsLeft % 3600) / 60);
+          const secs = secsLeft % 60;
           timerEl.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
+        } else if (foundNext && localStart > localNow) {
+          secsLeft = Math.floor((localStart - localNow) / 1000);
+          const days = Math.floor(secsLeft / 86400);
+          const hours = Math.floor((secsLeft % 86400) / 3600);
+          const mins = Math.floor((secsLeft % 3600) / 60);
+          const secs = secsLeft % 60;
+          timerEl.innerHTML = `<span class="inactive">Starts in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
         } else {
-          timerEl.innerHTML = `<span class="inactive">Duration: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
+          timerEl.innerHTML = `<span class="inactive">No upcoming event</span>`;
         }
       });
     }
