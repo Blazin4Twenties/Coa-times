@@ -115,7 +115,6 @@
     }
 
     function fmtTzTime(dt) {
-      // Show as HH:MM in the selected timezone
       try {
         return dt.toLocaleTimeString("en-US", {
           hour: "2-digit",
@@ -124,13 +123,17 @@
           timeZone: tz
         });
       } catch (e) {
-        // fallback to UTC display if unsupported
         return dt.getUTCHours().toString().padStart(2,"0") + ":" + dt.getUTCMinutes().toString().padStart(2,"0");
       }
     }
 
+    // --- Always Active Event IDs ---
+    const alwaysActiveEventIds = [
+      "ranked_match_season", "critical_conquest", "duel_bonds", "void_realms"
+    ];
+
     const events = [
-      { id: 'ranked_match_season', summary: 'Ranked Match Season', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
+      { id: 'ranked_match_season', summary: 'Rank Matches', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'critical_conquest', summary: 'Critical Conquest', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'duel_bonds', summary: 'Duel Bonds', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
       { id: 'void_realms', summary: 'Void Realms', desc: 'All day', startTime: '00:00', endTime: '00:00', recurring: true, recurDaysArr: [0,1,2,3,4,5,6] },
@@ -222,41 +225,53 @@
 
       const now = new Date();
       events.forEach(event => {
+        let isAlwaysActive = alwaysActiveEventIds.includes(event.id);
+
         let localNow = new Date(now.toLocaleString('en-US', { timeZone: tz }));
         let nowDay = localNow.getDay();
         let [sH, sM] = event.startTime.split(':').map(Number);
         let [eH, eM] = event.endTime.split(':').map(Number);
 
         let localStart = null, localEnd = null, foundNext = false;
-        for (let i=0; i<14; ++i) {
-          let day = (nowDay + i) % 7;
-          if (event.recurDaysArr && !event.recurDaysArr.includes(day)) continue;
-          let candidate = new Date(localNow);
-          candidate.setDate(localNow.getDate() + i);
-          candidate.setHours(sH, sM, 0, 0);
-          if (i === 0 && (localNow.getHours() > sH || (localNow.getHours() === sH && localNow.getMinutes() >= sM))) continue;
-          localStart = candidate;
-          localEnd = new Date(candidate);
-          localEnd.setHours(eH, eM, 0, 0);
-          if (eH < sH || (eH === sH && eM <= sM)) localEnd.setDate(localEnd.getDate() + 1);
-          foundNext = true;
-          break;
-        }
         let active = false;
-        let currStart = new Date(localNow); currStart.setHours(sH, sM, 0, 0);
-        let currEnd = new Date(localNow); currEnd.setHours(eH, eM, 0, 0);
-        if (eH < sH || (eH === sH && eM <= sM)) currEnd.setDate(currEnd.getDate() + 1);
-        if (event.recurDaysArr.includes(nowDay) && localNow >= currStart && localNow < currEnd) {
+        if (isAlwaysActive) {
+          // Always active logic
+          localStart = new Date(localNow);
+          localStart.setHours(0,0,0,0);
+          localEnd = new Date(localStart);
+          localEnd.setDate(localEnd.getDate() + 1);
           active = true;
-          localStart = currStart;
-          localEnd = currEnd;
-          foundNext = true;
-        }
-        if (event.customNext) {
-          let result = event.customNext(now);
-          localStart = result.nextStart;
-          localEnd = result.nextEnd;
-          active = result.isActive;
+        } else {
+          // Normal event logic
+          for (let i=0; i<14; ++i) {
+            let day = (nowDay + i) % 7;
+            if (event.recurDaysArr && !event.recurDaysArr.includes(day)) continue;
+            let candidate = new Date(localNow);
+            candidate.setDate(localNow.getDate() + i);
+            candidate.setHours(sH, sM, 0, 0);
+            if (i === 0 && (localNow.getHours() > sH || (localNow.getHours() === sH && localNow.getMinutes() >= sM))) continue;
+            localStart = candidate;
+            localEnd = new Date(candidate);
+            localEnd.setHours(eH, eM, 0, 0);
+            if (eH < sH || (eH === sH && eM <= sM)) localEnd.setDate(localEnd.getDate() + 1);
+            foundNext = true;
+            break;
+          }
+          let currStart = new Date(localNow); currStart.setHours(sH, sM, 0, 0);
+          let currEnd = new Date(localNow); currEnd.setHours(eH, eM, 0, 0);
+          if (eH < sH || (eH === sH && eM <= sM)) currEnd.setDate(currEnd.getDate() + 1);
+          if (event.recurDaysArr.includes(nowDay) && localNow >= currStart && localNow < currEnd) {
+            active = true;
+            localStart = currStart;
+            localEnd = currEnd;
+            foundNext = true;
+          }
+          if (event.customNext) {
+            let result = event.customNext(now);
+            localStart = result.nextStart;
+            localEnd = result.nextEnd;
+            active = result.isActive;
+          }
         }
 
         let duration = calcDuration(event.startTime, event.endTime);
@@ -274,10 +289,13 @@
         let cardEl = document.getElementById('card-' + event.id);
         if (!timerEl || !cardEl) return;
 
-        let secsLeft;
         let cardClass = "";
-        if (active) {
-          secsLeft = Math.max(0, Math.floor((localEnd - localNow) / 1000));
+        if (isAlwaysActive) {
+          // Always active: infinite timer
+          cardClass = "event-card status-active";
+          timerEl.innerHTML = `<span class="active">Event Active! (Always running)</span>`;
+        } else if (active) {
+          let secsLeft = Math.max(0, Math.floor((localEnd - localNow) / 1000));
           const days = Math.floor(secsLeft / 86400);
           const hours = Math.floor((secsLeft % 86400) / 3600);
           const mins = Math.floor((secsLeft % 3600) / 60);
@@ -290,7 +308,7 @@
             timerEl.innerHTML = `<span class="active">Event Active! Ends in: ${days}d ${pad(hours)}h ${pad(mins)}m ${pad(secs)}s</span>`;
           }
         } else if (foundNext && localStart > localNow) {
-          secsLeft = Math.floor((localStart - localNow) / 1000);
+          let secsLeft = Math.floor((localStart - localNow) / 1000);
           const days = Math.floor(secsLeft / 86400);
           const hours = Math.floor((secsLeft % 86400) / 3600);
           const mins = Math.floor((secsLeft % 3600) / 60);
