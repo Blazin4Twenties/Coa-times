@@ -20,14 +20,10 @@
   </style>
 </head>
 <body>
-  <h1>Crystal of Atlan - Live Event Countdown Timers</h1>
+  <h1>Crystal of Atlan - Live Event Countdown Timers (All Times UTC)</h1>
   <div class="events-grid" id="events"></div>
   <script>
     function pad(n){return n.toString().padStart(2,'0');}
-    function toTimeZone(date, tzString) {
-      let local = date.toLocaleString('en-US', { timeZone: tzString });
-      return new Date(local);
-    }
     function getDurationText(hours, minutes) {
       let result = [];
       if (hours > 0) result.push(hours + "h");
@@ -35,15 +31,14 @@
       return result.length ? result.join(" ") : "Instant";
     }
 
-    // Event definitions (with start/end times and durations)
+    // All times below are in UTC
     const events = [
       {
         id: 'ancient_battlefield_1',
         summary: 'Ancient Battlefield 1',
         desc: 'Matchmaking available daily',
-        tz: 'America/New_York',
-        startHour: 12, startMinute: 30,
-        endHour: 14, endMinute: 0,
+        startHour: 16, startMinute: 30, // 12:30 EDT = 16:30 UTC
+        endHour: 18, endMinute: 0,      // 14:00 EDT = 18:00 UTC
         days: [0,1,2,3,4,5,6],
         duration: { hours: 1, minutes: 30 }
       },
@@ -51,9 +46,8 @@
         id: 'ancient_battlefield_2',
         summary: 'Ancient Battlefield 2',
         desc: 'Matchmaking available daily',
-        tz: 'America/New_York',
-        startHour: 20, startMinute: 0,
-        endHour: 22, endMinute: 0,
+        startHour: 0, startMinute: 0,   // 20:00 EDT = 00:00 UTC (next day)
+        endHour: 2, endMinute: 0,       // 22:00 EDT = 02:00 UTC (next day)
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -61,9 +55,8 @@
         id: 'mine_wars_1',
         summary: 'Mine Wars 1',
         desc: 'Opens daily',
-        tz: 'America/New_York',
-        startHour: 12, startMinute: 0,
-        endHour: 14, endMinute: 0,
+        startHour: 16, startMinute: 0,  // 12:00 EDT = 16:00 UTC
+        endHour: 18, endMinute: 0,      // 14:00 EDT = 18:00 UTC
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -71,9 +64,8 @@
         id: 'mine_wars_2',
         summary: 'Mine Wars 2',
         desc: 'Opens daily',
-        tz: 'America/New_York',
-        startHour: 21, startMinute: 0,
-        endHour: 23, endMinute: 0,
+        startHour: 1, startMinute: 0,   // 21:00 EDT = 01:00 UTC (next day)
+        endHour: 3, endMinute: 0,       // 23:00 EDT = 03:00 UTC (next day)
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -81,9 +73,8 @@
         id: 'spirit_frenzy_weekday',
         summary: 'Spirit Frenzy (Weekday)',
         desc: 'Opens Mon-Fri',
-        tz: 'America/New_York',
-        startHour: 20, startMinute: 0,
-        endHour: 20, endMinute: 15,
+        startHour: 0, startMinute: 0,   // 20:00 EDT = 00:00 UTC (next day)
+        endHour: 0, endMinute: 15,      // 20:15 EDT = 00:15 UTC (next day)
         days: [1,2,3,4,5],
         duration: { hours: 0, minutes: 15 }
       },
@@ -91,9 +82,8 @@
         id: 'spirit_frenzy_weekend',
         summary: 'Spirit Frenzy (Weekend)',
         desc: 'Opens Sat & Sun',
-        tz: 'America/New_York',
-        startHour: 20, startMinute: 0,
-        endHour: 20, endMinute: 15,
+        startHour: 0, startMinute: 0,   // 20:00 EDT = 00:00 UTC (next day)
+        endHour: 0, endMinute: 15,      // 20:15 EDT = 00:15 UTC (next day)
         days: [0,6],
         duration: { hours: 0, minutes: 15 }
       },
@@ -101,9 +91,8 @@
         id: 'joint_siege_friday',
         summary: 'Joint Siege (Friday)',
         desc: 'Starts Friday',
-        tz: 'America/New_York',
-        startHour: 20, startMinute: 30,
-        endHour: 21, endMinute: 0,
+        startHour: 0, startMinute: 30,  // 20:30 EDT = 00:30 UTC (next day)
+        endHour: 1, endMinute: 0,       // 21:00 EDT = 01:00 UTC (next day)
         days: [5],
         duration: { hours: 0, minutes: 30 }
       },
@@ -111,9 +100,8 @@
         id: 'joint_siege_sunday',
         summary: 'Joint Siege (Sunday)',
         desc: 'Starts Sunday',
-        tz: 'America/New_York',
-        startHour: 20, startMinute: 30,
-        endHour: 21, endMinute: 0,
+        startHour: 0, startMinute: 30,  // 20:30 EDT = 00:30 UTC (next day)
+        endHour: 1, endMinute: 0,       // 21:00 EDT = 01:00 UTC (next day)
         days: [0],
         duration: { hours: 0, minutes: 30 }
       },
@@ -121,9 +109,8 @@
         id: 'arena_early',
         summary: 'Arena (Crystal Arena) Early',
         desc: 'Open daily',
-        tz: 'Asia/Shanghai',
-        startHour: 12, startMinute: 0,
-        endHour: 14, endMinute: 0,
+        startHour: 4, startMinute: 0,   // 12:00 CST (UTC+8) = 04:00 UTC
+        endHour: 6, endMinute: 0,       // 14:00 CST (UTC+8) = 06:00 UTC
         days: [0,1,2,3,4,5,6],
         duration: { hours: 2, minutes: 0 }
       },
@@ -131,20 +118,19 @@
         id: 'arena_late',
         summary: 'Arena (Crystal Arena) Late',
         desc: 'Open daily',
-        tz: 'Asia/Shanghai',
-        startHour: 19, startMinute: 0,
-        endHour: 22, endMinute: 0,
+        startHour: 11, startMinute: 0,  // 19:00 CST (UTC+8) = 11:00 UTC
+        endHour: 14, endMinute: 0,      // 22:00 CST (UTC+8) = 14:00 UTC
         days: [0,1,2,3,4,5,6],
         duration: { hours: 3, minutes: 0 }
       }
     ];
 
-    function getNextEventTimes({startHour, startMinute, endHour, endMinute, tz, days}, nowUTC) {
-      let nowLocal = toTimeZone(nowUTC, tz);
-      let localDay = nowLocal.getDay();
-      let localYear = nowLocal.getFullYear();
-      let localMonth = nowLocal.getMonth();
-      let localDate = nowLocal.getDate();
+    // Find next event start/end in UTC
+    function getNextEventTimes({startHour, startMinute, endHour, endMinute, days}, nowUTC) {
+      let localDay = nowUTC.getUTCDay();
+      let localYear = nowUTC.getUTCFullYear();
+      let localMonth = nowUTC.getUTCMonth();
+      let localDate = nowUTC.getUTCDate();
 
       let eventDays = days || [0,1,2,3,4,5,6];
 
@@ -152,26 +138,22 @@
       for (let i = 0; i <= 7; ++i) {
         let d = (localDay + i) % 7;
         if (eventDays.includes(d)) {
-          let candidateStart = new Date(localYear, localMonth, localDate + i, startHour, startMinute, 0, 0);
-          if (i === 0 && (nowLocal.getHours() > startHour || (nowLocal.getHours() === startHour && nowLocal.getMinutes() >= startMinute))) continue;
+          let candidateStart = new Date(Date.UTC(localYear, localMonth, localDate + i, startHour, startMinute, 0, 0));
+          if (i === 0 && (nowUTC.getUTCHours() > startHour || (nowUTC.getUTCHours() === startHour && nowUTC.getUTCMinutes() >= startMinute))) continue;
           nextStart = candidateStart;
-          nextEnd = new Date(localYear, localMonth, localDate + i, endHour, endMinute, 0, 0);
+          nextEnd = new Date(Date.UTC(localYear, localMonth, localDate + i, endHour, endMinute, 0, 0));
           break;
         }
       }
-      let currentStart = new Date(localYear, localMonth, localDate, startHour, startMinute, 0, 0);
-      let currentEnd = new Date(localYear, localMonth, localDate, endHour, endMinute, 0, 0);
+      let currentStart = new Date(Date.UTC(localYear, localMonth, localDate, startHour, startMinute, 0, 0));
+      let currentEnd = new Date(Date.UTC(localYear, localMonth, localDate, endHour, endMinute, 0, 0));
       let isActive = eventDays.includes(localDay) &&
-        nowLocal >= currentStart && nowLocal < currentEnd;
+        nowUTC >= currentStart && nowUTC < currentEnd;
       if (isActive) {
         nextStart = currentStart;
         nextEnd = currentEnd;
       }
-      let offsetStart = nextStart.getTime() - toTimeZone(nextStart, 'UTC').getTime();
-      let utcStart = new Date(nextStart.getTime() - offsetStart);
-      let offsetEnd = nextEnd.getTime() - toTimeZone(nextEnd, 'UTC').getTime();
-      let utcEnd = new Date(nextEnd.getTime() - offsetEnd);
-      return {utcStart, utcEnd, isActive, localStart: nextStart, localEnd: nextEnd};
+      return {utcStart: nextStart, utcEnd: nextEnd, isActive, localStart: nextStart, localEnd: nextEnd};
     }
 
     function renderEvents() {
@@ -202,12 +184,11 @@
         const dur = document.getElementById('duration-' + event.id);
 
         function fmt(dt) {
-          return pad(dt.getHours()) + ":" + pad(dt.getMinutes());
+          return pad(dt.getUTCHours()) + ":" + pad(dt.getUTCMinutes());
         }
         sch.innerHTML =
-          `<b>Start:</b> ${fmt(localStart)} &nbsp; <b>End:</b> ${fmt(localEnd)} (${event.tz.replace('_',' ')})`;
+          `<b>Start:</b> ${fmt(localStart)} &nbsp; <b>End:</b> ${fmt(localEnd)} UTC`;
 
-        // Duration
         dur.textContent = `Duration: ${getDurationText(event.duration.hours, event.duration.minutes)}`;
 
         if (isActive) {
@@ -217,7 +198,7 @@
           const m = Math.floor((diff % 3600) / 60);
           const s = diff % 60;
           el.innerHTML = `<span class="active">Event Active! Ends in: ${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s</span>`;
-          tm.textContent = `(Ends at: ${localEnd.toLocaleString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: event.tz})} ${event.tz.replace('_',' ')})`;
+          tm.textContent = `(Ends at: ${fmt(localEnd)} UTC)`;
         } else {
           let diff = Math.floor((utcStart - now) / 1000);
           if (diff < 0) diff = 0;
@@ -226,7 +207,7 @@
           const m = Math.floor((diff % 3600) / 60);
           const s = diff % 60;
           el.innerHTML = `<span class="inactive">Starts in: ${d}d ${pad(h)}h ${pad(m)}m ${pad(s)}s</span>`;
-          tm.textContent = `(Starts at: ${localStart.toLocaleString('en-US', {hour: '2-digit', minute: '2-digit', hour12: false, timeZone: event.tz})} ${event.tz.replace('_',' ')})`;
+          tm.textContent = `(Starts at: ${fmt(localStart)} UTC)`;
         }
       });
     }
@@ -235,7 +216,5 @@
     updateTimers();
     setInterval(updateTimers, 1000);
   </script>
-</body>
-</html>
 </body>
 </html>
